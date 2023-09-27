@@ -90,12 +90,10 @@
   "clang-tidy.fixOnSave": true,
   "clang-tidy.executable": "clang-tidy-12",
   "clang-tidy.buildPath": "build",
-  "clang-tidy.blacklist": [
-    // ".*hfile"
-  ],
   "C_Cpp.codeAnalysis.clangTidy.enabled": false,
   "editor.formatOnSaveMode": "file",
   "editor.formatOnSave": true,
+  "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
   "clang-format.assumeFilename": "${workspaceFolder}/.clang-format",
   "clang-format.style": "file",
   "clang-format.language.cpp.enable": true,
@@ -144,6 +142,6 @@
   "C_Cpp.errorSquiggles": "disabled",
   "C_Cpp.loggingLevel": "Debug",
   // "C_Cpp.formatting": "clangFormat",
-  "C_Cpp.formatting": "disabled",
+  "C_Cpp.formatting": "clangFormat",
   "C_Cpp.doxygen.generatedStyle": "/**",
 }

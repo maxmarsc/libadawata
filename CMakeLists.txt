@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.22)
 
 project(libadawata VERSION 0.0.1)
 
@@ -17,6 +17,9 @@ set(CMAKE_CXX_EXTENSIONS ON)
 # Misc
 # ##############################################################################
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
+add_subdirectory(cmake)
+add_subdirectory(adwt)
 
 # ##############################################################################
 # Testing
