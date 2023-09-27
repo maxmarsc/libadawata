@@ -50,7 +50,7 @@ class WaveformData {
     return static_cast<int>(m_.size());
   }
   [[nodiscard]] inline int numMipMapTables() const noexcept {
-    return static_cast<int>(phases_.size());
+    return static_cast<int>(mipmap_scale_.size());
   }
 
   [[nodiscard]] MipMapIndexes findMipMapIndexes(

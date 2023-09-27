@@ -37,6 +37,14 @@ WaveformData::WaveformData(std::span<const float> waveforms, int num_waveforms,
 
   // Compute the mipmap scale and how many entries in the mipmap tables
   computeMipMapScale(og_waveform_len, samplerate);
+  assert(numMipMapTables() > 0);
+
+  // Compute the phase points vectors
+  phases_.resize(numMipMapTables());
+  for (auto mipmap_idx : iter::range(numMipMapTables())) {
+    const auto waveform_len = og_waveform_len / (2 << mipmap_idx);
+    computePhaseVector(waveform_len, mipmap_idx);
+  }
 
   // We iterate over each waveform
   for (auto waveform_idx : iter::range(num_waveforms)) {
@@ -44,21 +52,21 @@ WaveformData::WaveformData(std::span<const float> waveforms, int num_waveforms,
         waveforms.subspan(waveform_idx * og_waveform_len, og_waveform_len);
 
     // Compute MQ for the og waveform
+    m_[waveform_idx].resize(numMipMapTables());
+    q_[waveform_idx].resize(numMipMapTables());
+    m_diff_[waveform_idx].resize(numMipMapTables());
+    q_diff_[waveform_idx].resize(numMipMapTables());
     computeMQValues(og_waveform, waveform_idx, 0);
 
     // Compute MQ for each mipmap entry
     for (auto mipmap_idx : iter::range(1, numMipMapTables())) {
       auto ratio             = 2 << mipmap_idx;
       const auto ds_waveform = downsampleWaveform(og_waveform, ratio);
+      if (ds_waveform.empty())
+        throw std::runtime_error("Downsampled failed");
 
       computeMQValues(ds_waveform, waveform_idx, mipmap_idx);
     }
-  }
-
-  // Compute the phase points vectors
-  for (auto mipmap_idx : iter::range(numMipMapTables())) {
-    const auto waveform_len = static_cast<int>(m_[0][mipmap_idx].size());
-    computePhaseVector(waveform_len, mipmap_idx);
   }
 }
 
@@ -69,8 +77,10 @@ std::unique_ptr<WaveformData> WaveformData::build(
     return nullptr;
 
   // can't use make_unique because ctor is private
-  return std::unique_ptr<WaveformData>(
-      new WaveformData(waveforms, num_waveforms, samplerate));
+  try {
+    return std::unique_ptr<WaveformData>(
+        new WaveformData(waveforms, num_waveforms, samplerate));
+  } catch (std::runtime_error&) { return nullptr; }
 }
 
 //==============================================================================
@@ -131,6 +141,10 @@ void WaveformData::computeMQValues(std::span<const float> waveform,
   assert(q_.size() == numWaveforms());
   assert(m_diff_.size() == numWaveforms());
   assert(q_diff_.size() == numWaveforms());
+  assert(m_[0].size() == numMipMapTables());
+  assert(q_[0].size() == numMipMapTables());
+  assert(m_diff_[0].size() == numMipMapTables());
+  assert(q_diff_[0].size() == numMipMapTables());
   assert(!phases_.empty());
 
   const auto waveform_len = static_cast<int>(waveform.size());
@@ -174,8 +188,8 @@ void WaveformData::computePhaseVector(int waveform_len, int mipmap_idx) {
   }
 }
 
-static std::vector<float> downsampleWaveform(std::span<const float> waveform,
-                                             int ratio) {
+std::vector<float> WaveformData::downsampleWaveform(
+    std::span<const float> waveform, int ratio) {
   constexpr auto kRepetitions = 3;
   static_assert(maths::isOdd(kRepetitions));
   const auto in_size  = static_cast<int>(waveform.size());
