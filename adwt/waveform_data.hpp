@@ -52,6 +52,9 @@ class WaveformData {
   [[nodiscard]] inline int numMipMapTables() const noexcept {
     return static_cast<int>(mipmap_scale_.size());
   }
+  [[nodiscard]] inline int waveformLen(int mipmap) const noexcept {
+    return static_cast<int>(m_[0][mipmap].size());
+  }
 
   [[nodiscard]] MipMapIndexes findMipMapIndexes(
       float phase_diff) const noexcept;
