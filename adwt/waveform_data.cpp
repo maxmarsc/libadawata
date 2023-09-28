@@ -10,6 +10,7 @@
 #include <soxr.h>
 #include <cppitertools/enumerate.hpp>
 #include <cppitertools/range.hpp>
+#include <iostream>
 
 #include "maths.hpp"
 
@@ -42,7 +43,7 @@ WaveformData::WaveformData(std::span<const float> waveforms, int num_waveforms,
   // Compute the phase points vectors
   phases_.resize(numMipMapTables());
   for (auto mipmap_idx : iter::range(numMipMapTables())) {
-    const auto waveform_len = og_waveform_len / (2 << mipmap_idx);
+    const auto waveform_len = og_waveform_len / (1 << mipmap_idx);
     computePhaseVector(waveform_len, mipmap_idx);
   }
 
@@ -60,7 +61,7 @@ WaveformData::WaveformData(std::span<const float> waveforms, int num_waveforms,
 
     // Compute MQ for each mipmap entry
     for (auto mipmap_idx : iter::range(1, numMipMapTables())) {
-      auto ratio             = 2 << mipmap_idx;
+      auto ratio             = 2 << (mipmap_idx - 1);
       const auto ds_waveform = downsampleWaveform(og_waveform, ratio);
       if (ds_waveform.empty())
         throw std::runtime_error("Downsampled failed");
@@ -72,6 +73,13 @@ WaveformData::WaveformData(std::span<const float> waveforms, int num_waveforms,
 
 std::unique_ptr<WaveformData> WaveformData::build(
     std::span<const float> waveforms, int num_waveforms, int samplerate) {
+  if (waveforms.empty())
+    return nullptr;
+  if (num_waveforms <= 0)
+    return nullptr;
+  if (samplerate <= 0)
+    return nullptr;
+
   // The waveforms span must contains waveforms of the same length
   if (waveforms.size() % num_waveforms != 0)
     return nullptr;
@@ -85,8 +93,8 @@ std::unique_ptr<WaveformData> WaveformData::build(
 
 //==============================================================================
 [[nodiscard]] WaveformData::MipMapIndexes WaveformData::findMipMapIndexes(
-    float phase_diff) const noexcept {
-  assert(phase_diff > 0);
+    float abs_phase_diff) const noexcept {
+  assert(phase_diff != 0);
   constexpr auto kThresholdRatio = 0.99F;
   constexpr auto kTest           = 0.1F;
 
@@ -94,7 +102,7 @@ std::unique_ptr<WaveformData> WaveformData::build(
   // search, like the last index and the phase diff diff
   auto i = 0;
   while (i < mipmap_scale_.size()) {
-    if (phase_diff < mipmap_scale_[i])
+    if (abs_phase_diff < mipmap_scale_[i])
       break;
 
     ++i;
@@ -107,7 +115,7 @@ std::unique_ptr<WaveformData> WaveformData::build(
 
   auto threshold = kThresholdRatio * mipmap_scale_[i];
 
-  if (phase_diff < threshold) {
+  if (abs_phase_diff < threshold) {
     // Below threshold, we don't crossfade
     return std::make_tuple(i, 1.F, i + 1, 0.F);
   }
@@ -115,7 +123,7 @@ std::unique_ptr<WaveformData> WaveformData::build(
   // Above threshold, starting crossfade
   auto a           = 1.0 / (mipmap_scale_[i] - threshold);
   auto b           = -threshold * a;
-  auto factor_next = a * phase_diff + b;
+  auto factor_next = a * abs_phase_diff + b;
   auto factor_crt  = 1.0 - factor_next;
 
   return std::make_tuple(i, factor_crt, i + 1, factor_next);
@@ -195,11 +203,11 @@ std::vector<float> WaveformData::downsampleWaveform(
   const auto in_size  = static_cast<int>(waveform.size());
   const auto out_size = in_size / ratio;
 
-  const soxr_quality_spec_t soxr_quality{SOXR_VHQ};
+  const auto soxr_quality = soxr_quality_spec(SOXR_VHQ, 0);
 
   // auto result       = std::vector<float>(out_size);
+  auto in_multiple  = std::vector<float>(in_size * kRepetitions);
   auto out_multiple = std::vector<float>(out_size * kRepetitions);
-  auto in_multiple  = std::vector<float>(waveform.size() * kRepetitions);
 
   // Copy the waveform multiple times
   for (auto i : iter::range(kRepetitions)) {
@@ -208,11 +216,16 @@ std::vector<float> WaveformData::downsampleWaveform(
   }
 
   // Downsample the multiple waveforms
-  size_t idone = 0;
-  size_t odone = 0;
-  soxr_oneshot(ratio, 1.0, 1, in_multiple.data(), in_size * kRepetitions,
-               &idone, out_multiple.data(), out_size * kRepetitions, &odone,
-               nullptr, &soxr_quality, nullptr);
+  size_t idone           = 0;
+  size_t odone           = 0;
+  const auto* soxr_error = soxr_oneshot(
+      static_cast<double>(ratio), 1.0, 1, in_multiple.data(),
+      in_size * kRepetitions, &idone, out_multiple.data(),
+      out_size * kRepetitions, &odone, nullptr, &soxr_quality, nullptr);
+  if (soxr_error) {
+    std::cerr << soxr_error << std::endl;
+    return std::vector<float>();
+  }
   if (idone != in_size * kRepetitions || odone != out_size * kRepetitions)
     return std::vector<float>();
 
