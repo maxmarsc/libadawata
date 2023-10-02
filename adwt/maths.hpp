@@ -24,12 +24,16 @@ inline constexpr bool isOdd(int value) {
 }
 
 inline int sign(float value) {
+  if (value == 0.F)
+    return 0;
   return std::signbit(value) ? -1 : 1;
 }
 
 template <typename T>
 inline constexpr T reduce(T value, T threshold) {
   static_assert(std::is_arithmetic_v<T>);
+  assert(threshold > 0);
+  assert(value <= 2 * threshold && value >= -threshold);
   if (value >= threshold) {
     return value - threshold;
   }

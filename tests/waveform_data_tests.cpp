@@ -10,7 +10,6 @@
 #include <catch2/generators/catch_generators_all.hpp>
 #include <catch2/generators/catch_generators_random.hpp>
 #include <cppitertools/range.hpp>
-// #include <cppitertools/zip.hpp>
 
 #include "adwt/waveform_data.hpp"
 

@@ -17,13 +17,14 @@ namespace adwt {
 class WaveformData {
   //============================================================================
   WaveformData(std::span<const float> waveforms, int num_waveforms,
-               int samplerate);
+               int samplerate, float mipmap_ratio);
 
  public:
   using MipMapIndexes = std::tuple<int, float, int, float>;
 
   static std::unique_ptr<WaveformData> build(std::span<const float> waveforms,
-                                             int num_waveforms, int samplerate);
+                                             int num_waveforms, int samplerate,
+                                             float mipmap_ratio = 0.98F);
 
   //============================================================================
   [[nodiscard]] inline std::span<const float> m(int waveform,
@@ -55,13 +56,17 @@ class WaveformData {
   [[nodiscard]] inline int waveformLen(int mipmap) const noexcept {
     return static_cast<int>(m_[0][mipmap].size());
   }
+  [[nodiscard]] inline std::tuple<float, float> minMaxPhaseDiffRatio()
+      const noexcept {
+    return std::make_tuple(mipmap_ratio_, 1.F / mipmap_ratio_);
+  };
 
   [[nodiscard]] MipMapIndexes findMipMapIndexes(
       float phase_diff) const noexcept;
 
   //==============================================================================
  private:
-  void computeMipMapScale(int waveform_len, int samplerate);
+  void computeMipMapScale(int waveform_len, float samplerate);
   void computeMQValues(std::span<const float> waveform, int waveform_idx,
                        int mipmap_idx);
   void computePhaseVector(int waveform_len, int mipmap_idx);
@@ -76,6 +81,7 @@ class WaveformData {
   std::vector<std::vector<std::vector<float>>> q_diff_;
   std::vector<std::vector<float>> phases_;
   std::vector<float> mipmap_scale_;
+  const float mipmap_ratio_;
 };
 
 }  // namespace adwt

@@ -24,11 +24,12 @@ class Oscillator {
   static constexpr auto kNumCoeffs = numCoeffs<Ftype>();
 
  public:
+  //============================================================================
   Oscillator()
       : waveform_data_(nullptr),
         r_array_(r<Ftype>()),
-        z_pow2_array_(zPow2<Ftype>()),
         z_array_(z<Ftype>()),
+        z_pow2_array_(zPow2<Ftype>()),
         exp_z_array_(zExp<Ftype>()) {}
 
   //============================================================================
@@ -36,15 +37,20 @@ class Oscillator {
       std::unique_ptr<WaveformData>&& waveform_data,
       std::tuple<float, float> init_state = std::make_tuple(0.F, 0.4F)) {
     assert(waveform_data_ == nullptr);
+    if (waveform_data == nullptr)
+      return 1;
     waveform_data_ = std::move(waveform_data);
     resetInternals(std::get<0>(init_state), std::get<1>(init_state));
     crt_waveform_ = 0;
+    return 0;
   }
-  [[nodiscard]] auto swapWaveform(
+  [[nodiscard]] std::unique_ptr<WaveformData> swapWaveforms(
       std::unique_ptr<WaveformData>&& waveform_data,
       std::tuple<float, float> init_state = std::make_tuple(0.F, 0.4F)) {
     assert(waveform_data_ != nullptr);
-    waveform_data.swap(waveform_data_);
+    if (waveform_data == nullptr)
+      return nullptr;
+    // waveform_data.swap(waveform_data_);
     resetInternals(std::get<0>(init_state), std::get<1>(init_state));
     crt_waveform_ = 0;
     return waveform_data;
@@ -60,16 +66,35 @@ class Oscillator {
     }
   }
 
+  //============================================================================
+  [[nodiscard]] inline int numWaveforms() const noexcept {
+    assert(waveform_data_ != nullptr);
+    return waveform_data_->numWaveforms();
+  }
+  [[nodiscard]] inline int crtWaveform() const noexcept {
+    assert(waveform_data_ != nullptr);
+    return crt_waveform_;
+  }
+  inline void setWaveform(int waveform_idx) noexcept {
+    assert(waveform_data_ != nullptr);
+    crt_waveform_ = waveform_idx;
+  }
+  [[nodiscard]] inline std::tuple<float, float> minMaxPhaseDiffRatio()
+      const noexcept {
+    assert(waveform_data_ != nullptr);
+    return waveform_data_->minMaxPhaseDiffRatio();
+  };
+
  private:
+  //============================================================================
   void resetInternals(float init_phase, float init_phase_diff) {
-    prev_cpx_y_array_ = std::complex<float>{};
+    assert(waveform_data_ != nullptr);
+    prev_cpx_y_array_ = std::array<std::complex<float>, kNumCoeffs>{};
     prev_phase_       = init_phase;
     prev_phase_red_   = std::fmod(init_phase, 1.F);
     prev_phase_diff_  = init_phase_diff;
     prev_mipmap_idx_ =
         std::get<0>(waveform_data_->findMipMapIndexes(init_phase_diff));
-
-    auto prev_waveform_len = waveform_data_->waveformLen(prev_mipmap_idx_);
 
     if (init_phase_diff >= 0) {
       j_red_ = maths::floor(init_phase_diff);
@@ -83,6 +108,7 @@ class Oscillator {
                                                          int jmax_p_red,
                                                          float phase_diff,
                                                          float phase_red) {
+    assert(waveform_data_ != nullptr);
     const auto waveform_len = waveform_data_->waveformLen(mipmap_idx);
     const auto forward      = phase_diff > 0;
     const auto prev_phase_red_bar =
@@ -123,17 +149,26 @@ class Oscillator {
         !forward && jmin != 0 && jmin_red > jmax_p_red ? -1.F : 0.F;
 
     // Compute the array of I_sum
-    for (auto i : iter::range(jmin_red, jmax_p_red)) {
+    for (auto i : iter::range(jmin_red, born_sup)) {
       const auto i_red = maths::reduce(i, waveform_len);
       const auto phase_red_bar =
-          i_red + cycle_offset + static_cast<int>(i_red > jmax_p_red);
+          phase_red + cycle_offset + static_cast<float>(i_red > jmax_p_red);
 
       const auto part_a = (phase_red_bar - phase_span[i_red + 1]) / phase_diff;
 
       for (auto&& [i_sum, z] : iter::zip(i_array, z_array_)) {
-        i_sum = std::exp(z * part_a) *
-                (z * qdiff_span[i_red] +
-                 mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]));
+        // const auto part_b = z * qdiff_span[i_red];
+        // const auto part_c =
+        //     mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]);
+        // const auto mem = std::exp(z * part_a) * (part_b + part_c);
+        // auto mem =
+        //     std::exp(z * part_a) *
+        //     (z * qdiff_span[i_red] +
+        //      mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]));
+        // i_sum += mem;
+        i_sum += std::exp(z * part_a) *
+                 (z * qdiff_span[i_red] +
+                  mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]));
       }
     }
 
@@ -178,7 +213,9 @@ class Oscillator {
 
   void processFwd(std::span<const float> phases, std::span<float> output);
   void processBi(std::span<const float> phases, std::span<float> output) {
+    assert(waveform_data_ != nullptr);
     assert(phases.size() == output.size());
+    // auto i = 0;
     for (auto&& [phase, output] : iter::zip(phases, output)) {
       // Ensure the phase diff is in [-0.5; 0.5]
       auto phase_diff = phase - prev_phase_;
@@ -199,14 +236,18 @@ class Oscillator {
       // Adjust j_red_ if  changing mipmap table
       if (mipmap_idx > prev_mipmap_idx_) {
         // Going up in frequencies
-        j_red_ = j_red_ / 2;
+        // j_red_ = j_red_ / 2;
+        j_red_ = j_red_ >> (mipmap_idx - prev_mipmap_idx_);
       } else if (mipmap_idx < prev_mipmap_idx_) {
         // Going down in frequencies
-        j_red_ = j_red_ * 2 +
-                 static_cast<int>(phase_span[j_red_ * 2 + 1] < prev_phase_red_);
+        j_red_ = j_red_ << (prev_mipmap_idx_ - mipmap_idx);
+        j_red_ += static_cast<int>(phase_span[j_red_ + 1] < prev_phase_red_);
+        // j_red_ = j_red_ * 2 +
+        //          static_cast<int>(phase_span[j_red_ * 2 + 1] < prev_phase_red_);
       }
 
       // Check if on the same slope as the previous iteration
+      prev_j_red_ = j_red_;
       if ((phase_diff >= 0 && prev_phase_diff_ >= 0) ||
           (phase_diff <= 0 && prev_phase_diff_ <= 0)) {
         prev_j_red_ =
@@ -248,7 +289,7 @@ class Oscillator {
         // Crossfade
         for (auto&& [i_cpx, i_cpx_up] :
              iter::zip(i_cpx_array, i_cpx_array_up)) {
-          i_cpx = i_cpx * mipmap_weight + i_cpx_up * mipmap_idx_up;
+          i_cpx = i_cpx * mipmap_weight + i_cpx_up * mipmap_weight_up;
         }
       }
 
@@ -257,17 +298,21 @@ class Oscillator {
       for (auto&& [cpx_y, prev_cpx_y, r, z, z_pow2, exp_z, i_cpx] :
            iter::zip(cpx_y_array, prev_cpx_y_array_, r_array_, z_array_,
                      z_pow2_array_, exp_z_array_, i_cpx_array)) {
-        cpx_y = exp_z * prev_cpx_y + 2 * r * (i_cpx / z_pow2);
+        cpx_y = exp_z * prev_cpx_y + 2.F * r * (i_cpx / z_pow2);
       }
 
       // Write the real part of the sum to the output
-      output = std::accumulate(cpx_y_array).real();
+      output = std::accumulate(cpx_y_array.begin(), cpx_y_array.end(),
+                               std::complex<float>{})
+                   .real();
 
       // END
       prev_phase_red_   = phase_red;
       prev_phase_       = phase;
       prev_cpx_y_array_ = cpx_y_array;
       prev_phase_diff_  = phase_diff;
+      prev_mipmap_idx_  = mipmap_idx;
+      // ++i;
     }
   }
 

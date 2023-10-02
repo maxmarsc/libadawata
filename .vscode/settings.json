@@ -6,7 +6,11 @@
   "cmake.configureArgs": [],
   "cmake.ctestArgs": [],
   "cmake.debugConfig": {
-    "cwd": "${workspaceFolder}"
+    "cwd": "${workspaceFolder}",
+    "args":[
+      // "Reference sweep test"
+      "Valid init"
+    ]
   },
   "C_Cpp.intelliSenseEngine": "disabled",
   // "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",

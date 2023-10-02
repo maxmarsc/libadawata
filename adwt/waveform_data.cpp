@@ -26,7 +26,8 @@ inline float computeQ(float x0, float x1, float y0, float y1) {
 
 //==============================================================================
 WaveformData::WaveformData(std::span<const float> waveforms, int num_waveforms,
-                           int samplerate) {
+                           int samplerate, float mipmap_ratio)
+    : mipmap_ratio_((1.F + mipmap_ratio) / 2.F) {
   // Resize the vectors to be sure then can hold enough waveforms
   m_.resize(num_waveforms);
   q_.resize(num_waveforms);
@@ -37,7 +38,7 @@ WaveformData::WaveformData(std::span<const float> waveforms, int num_waveforms,
       static_cast<int>(waveforms.size()) / num_waveforms;
 
   // Compute the mipmap scale and how many entries in the mipmap tables
-  computeMipMapScale(og_waveform_len, samplerate);
+  computeMipMapScale(og_waveform_len, static_cast<float>(samplerate));
   assert(numMipMapTables() > 0);
 
   // Compute the phase points vectors
@@ -72,7 +73,8 @@ WaveformData::WaveformData(std::span<const float> waveforms, int num_waveforms,
 }
 
 std::unique_ptr<WaveformData> WaveformData::build(
-    std::span<const float> waveforms, int num_waveforms, int samplerate) {
+    std::span<const float> waveforms, int num_waveforms, int samplerate,
+    float mipmap_ratio) {
   if (waveforms.empty())
     return nullptr;
   if (num_waveforms <= 0)
@@ -87,7 +89,7 @@ std::unique_ptr<WaveformData> WaveformData::build(
   // can't use make_unique because ctor is private
   try {
     return std::unique_ptr<WaveformData>(
-        new WaveformData(waveforms, num_waveforms, samplerate));
+        new WaveformData(waveforms, num_waveforms, samplerate, mipmap_ratio));
   } catch (std::runtime_error&) { return nullptr; }
 }
 
@@ -95,25 +97,25 @@ std::unique_ptr<WaveformData> WaveformData::build(
 [[nodiscard]] WaveformData::MipMapIndexes WaveformData::findMipMapIndexes(
     float abs_phase_diff) const noexcept {
   assert(abs_phase_diff != 0);
-  constexpr auto kThresholdRatio = 0.99F;
-  constexpr auto kTest           = 0.1F;
+  // constexpr auto kThresholdRatio = 0.99F;
+  constexpr auto kTest = 0.1F;
 
   // TODO: optimize the search, this could be done by giving a hint for the
   // search, like the last index and the phase diff diff
   auto i = 0;
-  while (i < mipmap_scale_.size()) {
+  while (i < mipmap_scale_.size() - 1) {
     if (abs_phase_diff < mipmap_scale_[i])
       break;
 
     ++i;
   }
 
-  if (i == mipmap_scale_.size()) {
+  if (i == mipmap_scale_.size() - 1) {
     // Reached last index, no crossfade
     return std::make_tuple(i, 1.F, i + 1, 0.F);
   }
 
-  auto threshold = kThresholdRatio * mipmap_scale_[i];
+  auto threshold = mipmap_ratio_ * mipmap_scale_[i];
 
   if (abs_phase_diff < threshold) {
     // Below threshold, we don't crossfade
@@ -130,16 +132,14 @@ std::unique_ptr<WaveformData> WaveformData::build(
 }
 
 //==============================================================================
-void WaveformData::computeMipMapScale(int waveform_len, int samplerate) {
-  auto start =
-      static_cast<float>(samplerate) / static_cast<float>(waveform_len) * 2.F;
-  auto num =
-      maths::floor(std::log2(static_cast<float>(samplerate) / 2.F / start));
+void WaveformData::computeMipMapScale(int waveform_len, float samplerate) {
+  auto start = samplerate / static_cast<float>(waveform_len) * 2.F;
+  auto num   = maths::floor(std::log2(samplerate / 2.F / start)) + 1;
 
   // Compute the mipmap scale
   mipmap_scale_.resize(num);
   for (auto&& [i, val] : iter::enumerate(mipmap_scale_)) {
-    val = start * static_cast<float>(std::pow(2.F, i));
+    val = start * static_cast<float>(std::pow(2.F, i)) / samplerate;
   }
 }
 
@@ -174,7 +174,7 @@ void WaveformData::computeMQValues(std::span<const float> waveform,
     auto y0 = waveform[i];
     auto y1 = waveform[(i + 1) % waveform_len];
     auto x0 = phase_vec[i];
-    auto x1 = phase_vec[(i + 1) % waveform_len];
+    auto x1 = phase_vec[i + 1];
 
     m_vec[i] = computeM(x0, x1, y0, y1);
     q_vec[i] = computeQ(x0, x1, y0, y1);
@@ -185,6 +185,7 @@ void WaveformData::computeMQValues(std::span<const float> waveform,
     m_diff_vec[i] = m_vec[(i + 1) % waveform_len] - m_vec[i];
     q_diff_vec[i] = q_vec[(i + 1) % waveform_len] - q_vec[i];
   }
+  q_diff_vec[waveform_len - 1] -= m_vec[0];
 }
 
 void WaveformData::computePhaseVector(int waveform_len, int mipmap_idx) {
