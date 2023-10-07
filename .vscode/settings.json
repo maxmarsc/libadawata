@@ -3,7 +3,9 @@
   "cmake.generator": "Ninja",
   "cmake.useCMakePresets": "never",
   "cmake.installPrefix": "${workspaceFolder}/install",
-  "cmake.configureArgs": [],
+  "cmake.configureArgs": [
+    "-DUSE_ASAN=ON"
+  ],
   "cmake.ctestArgs": [],
   "cmake.debugConfig": {
     "cwd": "${workspaceFolder}",

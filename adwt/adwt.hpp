@@ -215,7 +215,6 @@ class Oscillator {
   void processBi(std::span<const float> phases, std::span<float> output) {
     assert(waveform_data_ != nullptr);
     assert(phases.size() == output.size());
-    // auto i = 0;
     for (auto&& [phase, output] : iter::zip(phases, output)) {
       // Ensure the phase diff is in [-0.5; 0.5]
       auto phase_diff = phase - prev_phase_;
@@ -230,21 +229,34 @@ class Oscillator {
                     mipmap_weight_up] =
           waveform_data_->findMipMapIndexes(std::fabs(phase_diff));
 
-      auto phase_span      = waveform_data_->phases(mipmap_idx);
-      const auto phase_red = maths::reduce(phase, 1.F);
+      auto phase_span         = waveform_data_->phases(mipmap_idx);
+      const auto phase_red    = maths::reduce(phase, 1.F);
+      const auto waveform_len = waveform_data_->waveformLen(mipmap_idx);
 
       // Adjust j_red_ if  changing mipmap table
+      // "Optimized version" (need benchmark) => shitty output for step over the octave range
       if (mipmap_idx > prev_mipmap_idx_) {
         // Going up in frequencies
-        // j_red_ = j_red_ / 2;
         j_red_ = j_red_ >> (mipmap_idx - prev_mipmap_idx_);
       } else if (mipmap_idx < prev_mipmap_idx_) {
         // Going down in frequencies
         j_red_ = j_red_ << (prev_mipmap_idx_ - mipmap_idx);
-        j_red_ += static_cast<int>(phase_span[j_red_ + 1] < prev_phase_red_);
-        // j_red_ = j_red_ * 2 +
-        //          static_cast<int>(phase_span[j_red_ * 2 + 1] < prev_phase_red_);
+        if (prev_phase_diff_ > 0) {
+          j_red_ += static_cast<int>(phase_span[j_red_ + 1] < prev_phase_red_);
+        } else {
+          j_red_ -= static_cast<int>(phase_span[j_red_ - 1] > prev_phase_red_);
+        }
       }
+
+      // // More correct version for steps over an octave range
+      // if (mipmap_idx > prev_mipmap_idx_) {
+      //   const auto prev_phase_pos = prev_phase_red_ * waveform_len;
+      //   if (prev_phase_diff_ >= 0) {
+      //     j_red_ = maths::floor(prev_phase_pos);
+      //   } else {
+      //     j_red_ = maths::ceil(prev_phase_pos);
+      //   }
+      // }
 
       // Check if on the same slope as the previous iteration
       prev_j_red_ = j_red_;
@@ -254,9 +266,9 @@ class Oscillator {
             j_red_ + maths::sign(prev_phase_red_ - phase_span[j_red_]);
       }
 
-      const auto waveform_len = waveform_data_->waveformLen(mipmap_idx);
-      auto jmax               = 0;
-      auto jmin               = 0;
+      // const auto waveform_len = waveform_data_->waveformLen(mipmap_idx);
+      auto jmax = 0;
+      auto jmin = 0;
       if (phase_diff >= 0) {
         // Playback going forward
         j_red_ = maths::floor(phase_red * waveform_len);
@@ -312,7 +324,6 @@ class Oscillator {
       prev_cpx_y_array_ = cpx_y_array;
       prev_phase_diff_  = phase_diff;
       prev_mipmap_idx_  = mipmap_idx;
-      // ++i;
     }
   }
 

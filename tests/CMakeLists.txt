@@ -41,5 +41,11 @@ target_compile_definitions(
   ASSETS_DIR="${ASSETS_DIR}"
 )
 
+target_link_options(
+  libadawata_tests
+  PUBLIC
+  $<$<BOOL:${USE_ASAN}>:-fsanitize=address -static-libasan>
+)
+
 add_dependencies(libadawata_tests libsndfile_project)
 add_test(NAME libadawata_tests COMMAND libadawata_tests)

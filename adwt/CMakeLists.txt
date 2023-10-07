@@ -22,12 +22,25 @@ target_link_libraries(
   adawata
   PUBLIC
   soxr
+  # $<$<BOOL:${USE_ASAN}>:asan>
 )
 
 set_target_properties(
   adawata
   PROPERTIES
   CXX_STANDARD 20
+)
+
+target_compile_options(
+  adawata
+  PUBLIC
+  $<$<BOOL:${USE_ASAN}>:-fsanitize=address>
+)
+
+target_link_options(
+  adawata
+  PUBLIC
+  $<$<BOOL:${USE_ASAN}>:-fsanitize=address -static-libasan>
 )
 
 add_dependencies(

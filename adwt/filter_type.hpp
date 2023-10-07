@@ -12,7 +12,7 @@
 namespace adwt {
 
 enum class FilterType {
-  kType1  // Butteworth order 2, cutoff at 0.45*samplerate
+  kType1,  // Butteworth order 2, cutoff at 0.45*samplerate
 };
 
 //==============================================================================

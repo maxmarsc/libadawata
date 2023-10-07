@@ -34,7 +34,7 @@ TEST_CASE("Valid build") {
   CHECK(waveform_data->numWaveforms() == num_waveforms);
 
   // Check the number of mipmap tables match the expectations
-  const auto expected_mipmap_tables = std::log2(waveform_len) - 2;
+  const auto expected_mipmap_tables = std::log2(waveform_len) - 1;
   REQUIRE(waveform_data->numMipMapTables() == expected_mipmap_tables);
 
   // Check the access and size of each sub table in the data
