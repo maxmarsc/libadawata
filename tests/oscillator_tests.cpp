@@ -41,8 +41,10 @@ TEST_CASE("Valid init BT2") {
   CHECK(osc.crtWaveform() == 0);
   CHECK(osc.numWaveforms() == num_waveforms);
 
-  auto rng = Catch::Generators::RandomFloatingGenerator<float>(
+  auto rng_bi = Catch::Generators::RandomFloatingGenerator<float>(
       0.F, 1.F, Catch::getSeed());
+  auto rng_fwd = Catch::Generators::RandomFloatingGenerator<float>(
+      0.F, 0.5F, Catch::getSeed());
 
   SECTION("Then processing bidirectionnal") {
     const auto block_size = GENERATE(16, 32, 64, 128);
@@ -52,14 +54,33 @@ TEST_CASE("Valid init BT2") {
     for (auto& phase : phase_vector) {
       // This is only to check that we don't crash with complete random values
       // but the output of this will be complete trash
-      rng.next();
-      phase = rng.get();
+      rng_bi.next();
+      phase = rng_bi.get();
     }
 
     auto count = 10;
     while (--count) {
       osc.process<adwt::Direction::kBidirectionnal>(phase_vector,
                                                     output_vector);
+    }
+  }
+
+  SECTION("Then processing forward") {
+    const auto block_size = GENERATE(16, 32, 64, 128);
+    auto phase_vector     = std::vector<float>(block_size);
+    auto output_vector    = std::vector<float>(block_size);
+    auto prev_phase       = 0.F;
+
+    auto count = 10;
+    while (--count) {
+      for (auto& phase : phase_vector) {
+        // This is only to check that we don't crash with complete random values
+        // but the output of this will be complete trash
+        rng_fwd.next();
+        phase      = adwt::maths::reduce(prev_phase + rng_fwd.get(), 1.F);
+        prev_phase = phase;
+      }
+      osc.process<adwt::Direction::kForward>(phase_vector, output_vector);
     }
   }
 
@@ -77,14 +98,39 @@ TEST_CASE("Valid init BT2") {
     for (auto& phase : phase_vector) {
       // This is only to check that we don't crash with complete random values
       // but the output of this will be complete trash
-      rng.next();
-      phase = rng.get();
+      rng_bi.next();
+      phase = rng_bi.get();
     }
 
     auto count = 10;
     while (--count) {
       osc.process<adwt::Direction::kBidirectionnal>(phase_vector,
                                                     output_vector);
+    }
+  }
+
+  SECTION("Then valid swap of same size and processing forward") {
+    auto waveform_data_same =
+        adwt::WaveformData::build(waveforms, num_waveforms, samplerate);
+
+    REQUIRE(waveform_data_same != nullptr);
+    REQUIRE(osc.swapWaveforms(std::move(waveform_data_same)) != nullptr);
+
+    const auto block_size = GENERATE(16, 32, 64, 128);
+    auto phase_vector     = std::vector<float>(block_size);
+    auto output_vector    = std::vector<float>(block_size);
+    auto prev_phase       = 0.F;
+
+    auto count = 10;
+    while (--count) {
+      for (auto& phase : phase_vector) {
+        // This is only to check that we don't crash with complete random values
+        // but the output of this will be complete trash
+        rng_fwd.next();
+        phase      = adwt::maths::reduce(prev_phase + rng_fwd.get(), 1.F);
+        prev_phase = phase;
+      }
+      osc.process<adwt::Direction::kForward>(phase_vector, output_vector);
     }
   }
 
@@ -112,14 +158,44 @@ TEST_CASE("Valid init BT2") {
     for (auto& phase : phase_vector) {
       // This is only to check that we don't crash with complete random values
       // but the output of this will be complete trash
-      rng.next();
-      phase = rng.get();
+      rng_bi.next();
+      phase = rng_bi.get();
     }
 
     auto count = 10;
     while (--count) {
       osc.process<adwt::Direction::kBidirectionnal>(phase_vector,
                                                     output_vector);
+    }
+  }
+
+  SECTION("Then valid swap of new size and processing forward") {
+    const auto new_waveform_len  = GENERATE(256, 512);
+    const auto new_num_waveforms = GENERATE(1, 2, 4);
+    const auto waveforms =
+        std::vector<float>(new_waveform_len * new_num_waveforms);
+
+    auto new_waveform_data =
+        adwt::WaveformData::build(waveforms, new_num_waveforms, samplerate);
+
+    REQUIRE(new_waveform_data != nullptr);
+    REQUIRE(osc.swapWaveforms(std::move(new_waveform_data)) != nullptr);
+
+    const auto block_size = GENERATE(16, 32, 64, 128);
+    auto phase_vector     = std::vector<float>(block_size);
+    auto output_vector    = std::vector<float>(block_size);
+    auto prev_phase       = 0.F;
+
+    auto count = 10;
+    while (--count) {
+      for (auto& phase : phase_vector) {
+        // This is only to check that we don't crash with complete random values
+        // but the output of this will be complete trash
+        rng_fwd.next();
+        phase      = adwt::maths::reduce(prev_phase + rng_fwd.get(), 1.F);
+        prev_phase = phase;
+      }
+      osc.process<adwt::Direction::kForward>(phase_vector, output_vector);
     }
   }
 }
@@ -139,8 +215,10 @@ TEST_CASE("Valid init CH10") {
   CHECK(osc.crtWaveform() == 0);
   CHECK(osc.numWaveforms() == num_waveforms);
 
-  auto rng = Catch::Generators::RandomFloatingGenerator<float>(
+  auto rng_bi = Catch::Generators::RandomFloatingGenerator<float>(
       0.F, 1.F, Catch::getSeed());
+  auto rng_fwd = Catch::Generators::RandomFloatingGenerator<float>(
+      0.F, 0.5F, Catch::getSeed());
 
   SECTION("Then processing bidirectionnal") {
     const auto block_size = GENERATE(16, 32, 64, 128);
@@ -150,14 +228,33 @@ TEST_CASE("Valid init CH10") {
     for (auto& phase : phase_vector) {
       // This is only to check that we don't crash with complete random values
       // but the output of this will be complete trash
-      rng.next();
-      phase = rng.get();
+      rng_bi.next();
+      phase = rng_bi.get();
     }
 
     auto count = 10;
     while (--count) {
       osc.process<adwt::Direction::kBidirectionnal>(phase_vector,
                                                     output_vector);
+    }
+  }
+
+  SECTION("Then processing forward") {
+    const auto block_size = GENERATE(16, 32, 64, 128);
+    auto phase_vector     = std::vector<float>(block_size);
+    auto output_vector    = std::vector<float>(block_size);
+    auto prev_phase       = 0.F;
+
+    auto count = 10;
+    while (--count) {
+      for (auto& phase : phase_vector) {
+        // This is only to check that we don't crash with complete random values
+        // but the output of this will be complete trash
+        rng_fwd.next();
+        phase      = adwt::maths::reduce(prev_phase + rng_fwd.get(), 1.F);
+        prev_phase = phase;
+      }
+      osc.process<adwt::Direction::kForward>(phase_vector, output_vector);
     }
   }
 
@@ -175,14 +272,39 @@ TEST_CASE("Valid init CH10") {
     for (auto& phase : phase_vector) {
       // This is only to check that we don't crash with complete random values
       // but the output of this will be complete trash
-      rng.next();
-      phase = rng.get();
+      rng_bi.next();
+      phase = rng_bi.get();
     }
 
     auto count = 10;
     while (--count) {
       osc.process<adwt::Direction::kBidirectionnal>(phase_vector,
                                                     output_vector);
+    }
+  }
+
+  SECTION("Then valid swap of same size and processing forward") {
+    auto waveform_data_same =
+        adwt::WaveformData::build(waveforms, num_waveforms, samplerate);
+
+    REQUIRE(waveform_data_same != nullptr);
+    REQUIRE(osc.swapWaveforms(std::move(waveform_data_same)) != nullptr);
+
+    const auto block_size = GENERATE(16, 32, 64, 128);
+    auto phase_vector     = std::vector<float>(block_size);
+    auto output_vector    = std::vector<float>(block_size);
+    auto prev_phase       = 0.F;
+
+    auto count = 10;
+    while (--count) {
+      for (auto& phase : phase_vector) {
+        // This is only to check that we don't crash with complete random values
+        // but the output of this will be complete trash
+        rng_fwd.next();
+        phase      = adwt::maths::reduce(prev_phase + rng_fwd.get(), 1.F);
+        prev_phase = phase;
+      }
+      osc.process<adwt::Direction::kForward>(phase_vector, output_vector);
     }
   }
 
@@ -210,14 +332,44 @@ TEST_CASE("Valid init CH10") {
     for (auto& phase : phase_vector) {
       // This is only to check that we don't crash with complete random values
       // but the output of this will be complete trash
-      rng.next();
-      phase = rng.get();
+      rng_bi.next();
+      phase = rng_bi.get();
     }
 
     auto count = 10;
     while (--count) {
       osc.process<adwt::Direction::kBidirectionnal>(phase_vector,
                                                     output_vector);
+    }
+  }
+
+  SECTION("Then valid swap of new size and processing forward") {
+    const auto new_waveform_len  = GENERATE(256, 512);
+    const auto new_num_waveforms = GENERATE(1, 2, 4);
+    const auto waveforms =
+        std::vector<float>(new_waveform_len * new_num_waveforms);
+
+    auto new_waveform_data =
+        adwt::WaveformData::build(waveforms, new_num_waveforms, samplerate);
+
+    REQUIRE(new_waveform_data != nullptr);
+    REQUIRE(osc.swapWaveforms(std::move(new_waveform_data)) != nullptr);
+
+    const auto block_size = GENERATE(16, 32, 64, 128);
+    auto phase_vector     = std::vector<float>(block_size);
+    auto output_vector    = std::vector<float>(block_size);
+    auto prev_phase       = 0.F;
+
+    auto count = 10;
+    while (--count) {
+      for (auto& phase : phase_vector) {
+        // This is only to check that we don't crash with complete random values
+        // but the output of this will be complete trash
+        rng_fwd.next();
+        phase      = adwt::maths::reduce(prev_phase + rng_fwd.get(), 1.F);
+        prev_phase = phase;
+      }
+      osc.process<adwt::Direction::kForward>(phase_vector, output_vector);
     }
   }
 }
@@ -284,8 +436,23 @@ TEST_CASE("Reference test : BT2 sweep") {
     phase = std::fmod(phase, 1.F);
   }
 
-  SECTION("Process as single block") {
+  SECTION("Process bi as single block") {
     osc.process<adwt::Direction::kBidirectionnal>(phase_vec, output_vec);
+
+    for (auto& val : output_vec) {
+      val *= kGain;
+    }
+
+    auto err_max = 0.F;
+    for (auto&& [val, ref] : iter::zip(output_vec, output_ref_vec)) {
+      err_max = std::max(err_max, std::abs(val - ref));
+    }
+
+    CHECK(err_max <= kEps);
+  }
+
+  SECTION("Process fwd as single block") {
+    osc.process<adwt::Direction::kForward>(phase_vec, output_vec);
 
     for (auto& val : output_vec) {
       val *= kGain;
@@ -367,6 +534,21 @@ TEST_CASE("Reference test : CH10 sweep") {
 
   SECTION("Process as single block") {
     osc.process<adwt::Direction::kBidirectionnal>(phase_vec, output_vec);
+
+    for (auto& val : output_vec) {
+      val *= kGain;
+    }
+
+    auto err_max = 0.F;
+    for (auto&& [val, ref] : iter::zip(output_vec, output_ref_vec)) {
+      err_max = std::max(err_max, std::abs(val - ref));
+    }
+
+    CHECK(err_max <= kEps);
+  }
+
+  SECTION("Process fwd as single block") {
+    osc.process<adwt::Direction::kForward>(phase_vec, output_vec);
 
     for (auto& val : output_vec) {
       val *= kGain;
@@ -634,12 +816,6 @@ TEST_CASE("Reference test : BT2 reverse sweep") {
     phase = std::fmod(phase, 1.F);
   }
 
-  const auto size = 2048;
-  auto output_span =
-      std::span<float>(output_vec.begin(), output_vec.begin() + size);
-  auto ref_span =
-      std::span<float>(output_ref_vec.begin(), output_ref_vec.begin() + size);
-
   SECTION("Process as single block") {
     osc.process<adwt::Direction::kBidirectionnal>(phase_vec, output_vec);
 
@@ -648,17 +824,25 @@ TEST_CASE("Reference test : BT2 reverse sweep") {
     }
 
     auto err_max = 0.F;
-    auto imax    = 0;
-    auto i       = 0;
     for (auto&& [val, ref] : iter::zip(output_vec, output_ref_vec)) {
-      if (std::abs(val - ref) > err_max) {
-        imax = i;
-      }
       err_max = std::max(err_max, std::abs(val - ref));
-      ++i;
     }
 
-    INFO("imax " << imax);
+    CHECK(err_max <= kEps);
+  }
+
+  SECTION("Process fwd as single block") {
+    osc.process<adwt::Direction::kForward>(phase_vec, output_vec);
+
+    for (auto& val : output_vec) {
+      val *= kGain;
+    }
+
+    auto err_max = 0.F;
+    for (auto&& [val, ref] : iter::zip(output_vec, output_ref_vec)) {
+      err_max = std::max(err_max, std::abs(val - ref));
+    }
+
     CHECK(err_max <= kEps);
   }
 }
@@ -728,12 +912,6 @@ TEST_CASE("Reference test : CH10 reverse sweep") {
     phase = std::fmod(phase, 1.F);
   }
 
-  const auto size = 2048;
-  auto output_span =
-      std::span<float>(output_vec.begin(), output_vec.begin() + size);
-  auto ref_span =
-      std::span<float>(output_ref_vec.begin(), output_ref_vec.begin() + size);
-
   SECTION("Process as single block") {
     osc.process<adwt::Direction::kBidirectionnal>(phase_vec, output_vec);
 
@@ -741,22 +919,26 @@ TEST_CASE("Reference test : CH10 reverse sweep") {
       val *= kGain;
     }
 
-    SndfileHandle("CH10_reverse_sweep.wav", SFM_WRITE, output_sndfile.format(),
-                  1, 44100)
-        .writef(output_vec.data(), output_sndfile.frames());
-
     auto err_max = 0.F;
-    auto imax    = 0;
-    auto i       = 0;
     for (auto&& [val, ref] : iter::zip(output_vec, output_ref_vec)) {
-      if (std::abs(val - ref) > err_max) {
-        imax = i;
-      }
       err_max = std::max(err_max, std::abs(val - ref));
-      ++i;
     }
 
-    INFO("imax " << imax);
+    CHECK(err_max <= kEps);
+  }
+
+  SECTION("Process fwd as single block") {
+    osc.process<adwt::Direction::kForward>(phase_vec, output_vec);
+
+    for (auto& val : output_vec) {
+      val *= kGain;
+    }
+
+    auto err_max = 0.F;
+    for (auto&& [val, ref] : iter::zip(output_vec, output_ref_vec)) {
+      err_max = std::max(err_max, std::abs(val - ref));
+    }
+
     CHECK(err_max <= kEps);
   }
 }
@@ -1016,16 +1198,6 @@ TEST_CASE("Reference test : BT2 460Hz") {
     phase = std::fmod(phase, 1.F);
   }
 
-  const auto size  = 512;
-  const auto start = 209090 - 32;
-  auto input_span =
-      std::span(phase_vec.begin() + start, phase_vec.begin() + start + size);
-  auto output_span =
-      std::span(output_vec.begin() + start, output_vec.begin() + size + start);
-  auto ref_span = std::span(output_ref_vec.begin() + start,
-                            output_ref_vec.begin() + start + size);
-  auto err_vec  = std::vector<float>(num_samples);
-
   SECTION("Process as single block") {
     osc.process<adwt::Direction::kBidirectionnal>(phase_vec, output_vec);
 
@@ -1038,6 +1210,21 @@ TEST_CASE("Reference test : BT2 460Hz") {
     for (auto&& [val, ref] : iter::zip(output_vec, output_ref_vec)) {
       err_max = std::max(err_max, std::abs(val - ref));
     }
+    CHECK(err_max <= kEps);
+  }
+
+  SECTION("Process fwd as single block") {
+    osc.process<adwt::Direction::kForward>(phase_vec, output_vec);
+
+    for (auto& val : output_vec) {
+      val *= kGain;
+    }
+
+    auto err_max = 0.F;
+    for (auto&& [val, ref] : iter::zip(output_vec, output_ref_vec)) {
+      err_max = std::max(err_max, std::abs(val - ref));
+    }
+
     CHECK(err_max <= kEps);
   }
 }
@@ -1127,6 +1314,21 @@ TEST_CASE("Reference test : CH10 460Hz") {
     for (auto&& [val, ref] : iter::zip(output_vec, output_ref_vec)) {
       err_max = std::max(err_max, std::abs(val - ref));
     }
+    CHECK(err_max <= kEps);
+  }
+
+  SECTION("Process fwd as single block") {
+    osc.process<adwt::Direction::kForward>(phase_vec, output_vec);
+
+    for (auto& val : output_vec) {
+      val *= kGain;
+    }
+
+    auto err_max = 0.F;
+    for (auto&& [val, ref] : iter::zip(output_vec, output_ref_vec)) {
+      err_max = std::max(err_max, std::abs(val - ref));
+    }
+
     CHECK(err_max <= kEps);
   }
 }

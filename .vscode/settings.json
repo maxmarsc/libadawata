@@ -11,7 +11,7 @@
     "cwd": "${workspaceFolder}",
     "args":[
       // "Reference sweep test"
-      "Reference test : CH10 sweep"
+      "Valid init BT2"
     ]
   },
   "C_Cpp.intelliSenseEngine": "disabled",
