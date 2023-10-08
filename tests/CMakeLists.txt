@@ -3,6 +3,9 @@ include(sndfile)
 
 set(ASSETS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 
+# ##############################################################################
+# Testing
+# ##############################################################################
 add_executable(
   libadawata_tests
   ${CMAKE_CURRENT_SOURCE_DIR}/waveform_data_tests.cpp
@@ -49,3 +52,10 @@ target_link_options(
 
 add_dependencies(libadawata_tests libsndfile_project)
 add_test(NAME libadawata_tests COMMAND libadawata_tests)
+
+# ##############################################################################
+# Benchmarks
+# ##############################################################################
+if(BUILD_BENCHMARKS)
+  add_subdirectory(benchmarks)
+endif()
