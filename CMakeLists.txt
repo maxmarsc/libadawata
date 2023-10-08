@@ -15,6 +15,8 @@ set(CMAKE_CXX_USE_RESPONSE_FILE_FOR_INCLUDES Off)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS ON)
 
+message(STATUS "CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE}")
+
 # ##############################################################################
 # Misc
 # ##############################################################################
