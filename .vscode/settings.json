@@ -4,14 +4,14 @@
   "cmake.useCMakePresets": "never",
   "cmake.installPrefix": "${workspaceFolder}/install",
   "cmake.configureArgs": [
-    "-DUSE_ASAN=ON"
+    "-DUSE_ASAN=OFF"
   ],
   "cmake.ctestArgs": [],
   "cmake.debugConfig": {
     "cwd": "${workspaceFolder}",
     "args":[
       // "Reference sweep test"
-      "Valid init"
+      "Reference test : BT2 flipped sweep"
     ]
   },
   "C_Cpp.intelliSenseEngine": "disabled",

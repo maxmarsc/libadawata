@@ -91,15 +91,17 @@ class Oscillator {
     assert(waveform_data_ != nullptr);
     prev_cpx_y_array_ = std::array<std::complex<float>, kNumCoeffs>{};
     prev_phase_       = init_phase;
-    prev_phase_red_   = std::fmod(init_phase, 1.F);
-    prev_phase_diff_  = init_phase_diff;
-    prev_mipmap_idx_ =
-        std::get<0>(waveform_data_->findMipMapIndexes(init_phase_diff));
+    // prev_phase_red_   = std::fmod(init_phase, 1.F);
+    prev_phase_red_  = maths::reduce(init_phase, 1.F);
+    prev_phase_diff_ = init_phase_diff;
+    prev_mipmap_idx_ = std::get<0>(
+        waveform_data_->findMipMapIndexes(std::fabs(init_phase_diff)));
+    const auto waveform_len = waveform_data_->waveformLen(prev_mipmap_idx_);
 
     if (init_phase_diff >= 0) {
-      j_red_ = maths::floor(init_phase_diff);
+      j_red_ = maths::floor(prev_phase_red_ * waveform_len);
     } else {
-      j_red_ = maths::ceil(init_phase_diff);
+      j_red_ = maths::ceil(prev_phase_red_ * waveform_len);
     }
   }
 
@@ -148,6 +150,8 @@ class Oscillator {
     const auto cycle_offset =
         !forward && jmin != 0 && jmin_red > jmax_p_red ? -1.F : 0.F;
 
+    const auto sign = static_cast<float>(maths::sign(phase_diff));
+
     // Compute the array of I_sum
     for (auto i : iter::range(jmin_red, born_sup)) {
       const auto i_red = maths::reduce(i, waveform_len);
@@ -166,7 +170,7 @@ class Oscillator {
         //     (z * qdiff_span[i_red] +
         //      mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]));
         // i_sum += mem;
-        i_sum += std::exp(z * part_a) *
+        i_sum += std::exp(z * part_a) * sign *
                  (z * qdiff_span[i_red] +
                   mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]));
       }

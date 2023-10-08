@@ -13,6 +13,7 @@ namespace adwt {
 
 enum class FilterType {
   kType1,  // Butteworth order 2, cutoff at 0.45*samplerate
+  kType2,  // Chebyshev type 2 order 10, cutoff at 0.61*samplerate
 };
 
 //==============================================================================
@@ -61,6 +62,23 @@ constexpr auto r<FilterType::kType1>() {
 template <>
 constexpr auto z<FilterType::kType1>() {
   return std::array<std::complex<float>, 1>{-1.99929732 + 1.99929732I};
+}
+
+//==============================================================================
+template <>
+constexpr auto r<FilterType::kType2>() {
+  return std::array<std::complex<float>, 5>{
+      0.26281952 - 0.41698263I, 2.34161433 + 1.04896884I,
+      -2.63431397 + 7.51745447I, -16.67718259 - 6.76247888I,
+      16.69636533 - 23.51135536I};
+}
+
+template <>
+constexpr auto z<FilterType::kType2>() {
+  return std::array<std::complex<float>, 5>{
+      -0.29931827 + 2.94764072I, -0.97441784 + 2.98286211I,
+      -1.89003202 + 2.94796957I, -3.15580399 + 2.50801272I,
+      -4.37780671 + 1.08149105I};
 }
 
 //==============================================================================

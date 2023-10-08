@@ -145,9 +145,9 @@ TEST_CASE("Valid init") {
   }
 }
 
-TEST_CASE("Reference test : sweep") {
+TEST_CASE("Reference test : BT2 sweep") {
   constexpr auto kSweepPhaseFile =
-      std::string_view(ASSETS_DIR "/BT2_w2048_sweep_phase.wav");
+      std::string_view(ASSETS_DIR "/sweep_phase.wav");
   constexpr auto kSweepAudioFile =
       std::string_view(ASSETS_DIR "/BT2_w2048_sweep.wav");
   constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
@@ -223,9 +223,291 @@ TEST_CASE("Reference test : sweep") {
   }
 }
 
+TEST_CASE("Reference test : BT2 flipped sweep") {
+  constexpr auto kSweepPhaseFile =
+      std::string_view(ASSETS_DIR "/flipped_sweep_phase.wav");
+  constexpr auto kSweepAudioFile =
+      std::string_view(ASSETS_DIR "/BT2_w2048_flipped_sweep.wav");
+  constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
+
+  // Empiric
+  constexpr auto kEps = 5e-5F;  // -40dB difference with python impl
+  Catch::StringMaker<float>::precision = 15;
+  // The reference file has a gain of 0.5
+  constexpr auto kGain          = 0.5F;
+  constexpr auto kPhaseInit     = 0.7497732426418224F;
+  constexpr auto kPhaseDiffInit = -0.5F;
+
+  // Load the waveform file
+  auto waveform_sndfile = SndfileHandle(kSawWaveFile.data(), SFM_READ);
+  REQUIRE(waveform_sndfile.frames() != 0);
+  REQUIRE(waveform_sndfile.channels() == 1);
+  const auto samplerate   = waveform_sndfile.samplerate();
+  const auto waveform_len = waveform_sndfile.frames();
+
+  // Read the waveform file
+  auto waveform_vector = std::vector<float>(waveform_len);
+  REQUIRE(waveform_sndfile.readf(waveform_vector.data(), waveform_len) ==
+          waveform_len);
+
+  // Init the waveform data
+  auto waveform_data =
+      adwt::WaveformData::build(waveform_vector, 1, samplerate);
+  REQUIRE(waveform_data != nullptr);
+
+  // Init the oscillator
+  auto osc = adwt::Oscillator<adwt::FilterType::kType1>{};
+  REQUIRE(osc.init(std::move(waveform_data),
+                   std::make_tuple(kPhaseInit, kPhaseDiffInit)) == 0);
+
+  // Init & read the phase file
+  auto phase_sndfile = SndfileHandle(kSweepPhaseFile.data(), SFM_READ);
+  float first_sample{};
+  REQUIRE(phase_sndfile.channels() == 1);
+  const auto num_samples = phase_sndfile.frames() - 1;
+  // We throw the first sample away, it's zero
+  REQUIRE(phase_sndfile.readf(&first_sample, 1) == 1);
+  REQUIRE(first_sample == kPhaseInit);
+  auto phase_vec = std::vector<float>(num_samples);
+  REQUIRE(phase_sndfile.readf(phase_vec.data(), num_samples) == num_samples);
+
+  // Init and read the output ref file
+  auto output_sndfile = SndfileHandle(kSweepAudioFile.data(), SFM_READ);
+  REQUIRE(output_sndfile.channels() == 1);
+  REQUIRE(output_sndfile.frames() == phase_sndfile.frames());
+  // We throw the first sample away, it's zero
+  REQUIRE(output_sndfile.readf(&first_sample, 1) == 1);
+  REQUIRE(first_sample == 0.F);
+  auto output_ref_vec = std::vector<float>(num_samples);
+  REQUIRE(output_sndfile.readf(output_ref_vec.data(), num_samples) ==
+          num_samples);
+
+  // Create vector for the output
+  auto output_vec = std::vector<float>(num_samples);
+  for (auto& phase : phase_vec) {
+    phase = std::fmod(phase, 1.F);
+  }
+
+  const auto size = 2048;
+  auto output_span =
+      std::span<float>(output_vec.begin(), output_vec.begin() + size);
+  auto ref_span =
+      std::span<float>(output_ref_vec.begin(), output_ref_vec.begin() + size);
+
+  SECTION("Process as single block") {
+    osc.process<adwt::Direction::kBidirectionnal>(phase_vec, output_vec);
+
+    for (auto& val : output_vec) {
+      val *= kGain;
+    }
+
+    auto err_max = 0.F;
+    auto imax    = 0;
+    auto i       = 0;
+    for (auto&& [val, ref] : iter::zip(output_vec, output_ref_vec)) {
+      if (std::abs(val - ref) > err_max) {
+        imax = i;
+      }
+      err_max = std::max(err_max, std::abs(val - ref));
+      ++i;
+    }
+
+    INFO("imax " << imax);
+    CHECK(err_max <= kEps);
+  }
+}
+
+TEST_CASE("Reference test : BT2 reverse sweep") {
+  constexpr auto kSweepPhaseFile =
+      std::string_view(ASSETS_DIR "/reverse_sweep_phase.wav");
+  constexpr auto kSweepAudioFile =
+      std::string_view(ASSETS_DIR "/BT2_w2048_reverse_sweep.wav");
+  constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
+
+  // Empiric
+  constexpr auto kEps = 9e-5F;  // -37dB difference with python impl
+  Catch::StringMaker<float>::precision = 15;
+  // The reference file has a gain of 0.5
+  constexpr auto kGain          = 0.5F;
+  constexpr auto kPhaseInit     = 0.F;
+  constexpr auto kPhaseDiffInit = 0.5F;
+
+  // Load the waveform file
+  auto waveform_sndfile = SndfileHandle(kSawWaveFile.data(), SFM_READ);
+  REQUIRE(waveform_sndfile.frames() != 0);
+  REQUIRE(waveform_sndfile.channels() == 1);
+  const auto samplerate   = waveform_sndfile.samplerate();
+  const auto waveform_len = waveform_sndfile.frames();
+
+  // Read the waveform file
+  auto waveform_vector = std::vector<float>(waveform_len);
+  REQUIRE(waveform_sndfile.readf(waveform_vector.data(), waveform_len) ==
+          waveform_len);
+
+  // Init the waveform data
+  auto waveform_data =
+      adwt::WaveformData::build(waveform_vector, 1, samplerate);
+  REQUIRE(waveform_data != nullptr);
+
+  // Init the oscillator
+  auto osc = adwt::Oscillator<adwt::FilterType::kType1>{};
+  REQUIRE(osc.init(std::move(waveform_data),
+                   std::make_tuple(kPhaseInit, kPhaseDiffInit)) == 0);
+
+  // Init & read the phase file
+  auto phase_sndfile = SndfileHandle(kSweepPhaseFile.data(), SFM_READ);
+  float first_sample{};
+  REQUIRE(phase_sndfile.channels() == 1);
+  const auto num_samples = phase_sndfile.frames() - 1;
+  // We throw the first sample away, it's zero
+  REQUIRE(phase_sndfile.readf(&first_sample, 1) == 1);
+  REQUIRE(first_sample == kPhaseInit);
+  auto phase_vec = std::vector<float>(num_samples);
+  REQUIRE(phase_sndfile.readf(phase_vec.data(), num_samples) == num_samples);
+
+  // Init and read the output ref file
+  auto output_sndfile = SndfileHandle(kSweepAudioFile.data(), SFM_READ);
+  REQUIRE(output_sndfile.channels() == 1);
+  REQUIRE(output_sndfile.frames() == phase_sndfile.frames());
+  // We throw the first sample away, it's zero
+  REQUIRE(output_sndfile.readf(&first_sample, 1) == 1);
+  REQUIRE(first_sample == 0.F);
+  auto output_ref_vec = std::vector<float>(num_samples);
+  REQUIRE(output_sndfile.readf(output_ref_vec.data(), num_samples) ==
+          num_samples);
+
+  // Create vector for the output
+  auto output_vec = std::vector<float>(num_samples);
+  for (auto& phase : phase_vec) {
+    phase = std::fmod(phase, 1.F);
+  }
+
+  const auto size = 2048;
+  auto output_span =
+      std::span<float>(output_vec.begin(), output_vec.begin() + size);
+  auto ref_span =
+      std::span<float>(output_ref_vec.begin(), output_ref_vec.begin() + size);
+
+  SECTION("Process as single block") {
+    osc.process<adwt::Direction::kBidirectionnal>(phase_vec, output_vec);
+
+    for (auto& val : output_vec) {
+      val *= kGain;
+    }
+
+    auto err_max = 0.F;
+    auto imax    = 0;
+    auto i       = 0;
+    for (auto&& [val, ref] : iter::zip(output_vec, output_ref_vec)) {
+      if (std::abs(val - ref) > err_max) {
+        imax = i;
+      }
+      err_max = std::max(err_max, std::abs(val - ref));
+      ++i;
+    }
+
+    INFO("imax " << imax);
+    CHECK(err_max <= kEps);
+  }
+}
+
+TEST_CASE("Reference test : BT2 reverse flipped sweep") {
+  constexpr auto kSweepPhaseFile =
+      std::string_view(ASSETS_DIR "/reverse_flipped_sweep_phase.wav");
+  constexpr auto kSweepAudioFile =
+      std::string_view(ASSETS_DIR "/BT2_w2048_reverse_flipped_sweep.wav");
+  constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
+
+  // Empiric
+  constexpr auto kEps = 2.5e-5F;  // -43dB difference with python impl
+  Catch::StringMaker<float>::precision = 15;
+  // The reference file has a gain of 0.5
+  constexpr auto kGain          = 0.5F;
+  constexpr auto kPhaseInit     = 0.7497732426272705F;
+  constexpr auto kPhaseDiffInit = -0.0004535147381830029F;
+
+  // Load the waveform file
+  auto waveform_sndfile = SndfileHandle(kSawWaveFile.data(), SFM_READ);
+  REQUIRE(waveform_sndfile.frames() != 0);
+  REQUIRE(waveform_sndfile.channels() == 1);
+  const auto samplerate   = waveform_sndfile.samplerate();
+  const auto waveform_len = waveform_sndfile.frames();
+
+  // Read the waveform file
+  auto waveform_vector = std::vector<float>(waveform_len);
+  REQUIRE(waveform_sndfile.readf(waveform_vector.data(), waveform_len) ==
+          waveform_len);
+
+  // Init the waveform data
+  auto waveform_data =
+      adwt::WaveformData::build(waveform_vector, 1, samplerate);
+  REQUIRE(waveform_data != nullptr);
+
+  // Init the oscillator
+  auto osc = adwt::Oscillator<adwt::FilterType::kType1>{};
+  REQUIRE(osc.init(std::move(waveform_data),
+                   std::make_tuple(kPhaseInit, kPhaseDiffInit)) == 0);
+
+  // Init & read the phase file
+  auto phase_sndfile = SndfileHandle(kSweepPhaseFile.data(), SFM_READ);
+  float first_sample{};
+  REQUIRE(phase_sndfile.channels() == 1);
+  const auto num_samples = phase_sndfile.frames() - 1;
+  // We throw the first sample away, it's zero
+  REQUIRE(phase_sndfile.readf(&first_sample, 1) == 1);
+  REQUIRE(first_sample == kPhaseInit);
+  auto phase_vec = std::vector<float>(num_samples);
+  REQUIRE(phase_sndfile.readf(phase_vec.data(), num_samples) == num_samples);
+
+  // Init and read the output ref file
+  auto output_sndfile = SndfileHandle(kSweepAudioFile.data(), SFM_READ);
+  REQUIRE(output_sndfile.channels() == 1);
+  REQUIRE(output_sndfile.frames() == phase_sndfile.frames());
+  // We throw the first sample away, it's zero
+  REQUIRE(output_sndfile.readf(&first_sample, 1) == 1);
+  REQUIRE(first_sample == 0.F);
+  auto output_ref_vec = std::vector<float>(num_samples);
+  REQUIRE(output_sndfile.readf(output_ref_vec.data(), num_samples) ==
+          num_samples);
+
+  // Create vector for the output
+  auto output_vec = std::vector<float>(num_samples);
+  for (auto& phase : phase_vec) {
+    phase = std::fmod(phase, 1.F);
+  }
+
+  const auto size = 2048;
+  auto output_span =
+      std::span<float>(output_vec.begin(), output_vec.begin() + size);
+  auto ref_span =
+      std::span<float>(output_ref_vec.begin(), output_ref_vec.begin() + size);
+
+  SECTION("Process as single block") {
+    osc.process<adwt::Direction::kBidirectionnal>(phase_vec, output_vec);
+
+    for (auto& val : output_vec) {
+      val *= kGain;
+    }
+
+    auto err_max = 0.F;
+    auto imax    = 0;
+    auto i       = 0;
+    for (auto&& [val, ref] : iter::zip(output_vec, output_ref_vec)) {
+      if (std::abs(val - ref) > err_max) {
+        imax = i;
+      }
+      err_max = std::max(err_max, std::abs(val - ref));
+      ++i;
+    }
+
+    INFO("imax " << imax);
+    CHECK(err_max <= kEps);
+  }
+}
+
 TEST_CASE("Reference test : 460Hz") {
   constexpr auto k460_Phase_File =
-      std::string_view(ASSETS_DIR "/BT2_w2048_460Hz_phase.wav");
+      std::string_view(ASSETS_DIR "/460Hz_phase.wav");
   constexpr auto k460_Audio_File =
       std::string_view(ASSETS_DIR "/BT2_w2048_460Hz.wav");
   constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
