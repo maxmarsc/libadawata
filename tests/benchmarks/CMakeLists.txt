@@ -64,3 +64,48 @@ target_link_libraries(
 )
 
 add_dependencies(adwt_benchmark benchmark_project)
+
+add_subdirectory(source)
+
+# ##############################################################################
+# juce-resampler
+# ##############################################################################
+add_executable(
+  juce_benchmark
+  ${CMAKE_CURRENT_SOURCE_DIR}/juce_benchmark.cpp
+)
+
+target_include_directories(
+  juce_benchmark
+  PRIVATE
+  ${PROJECT_SOURCE_DIR}
+  ${BENCHMARK_INSTALL_DIR}/include
+)
+
+set_target_properties(
+  juce_benchmark
+  PROPERTIES CXX_STANDARD 20
+)
+
+target_compile_options(
+  juce_benchmark
+  PRIVATE -Wall -Wextra
+)
+
+target_compile_definitions(
+  juce_benchmark
+  PRIVATE
+  ASSETS_DIR="${ASSETS_DIR}"
+)
+
+target_link_directories(
+  juce_benchmark
+  PRIVATE
+  ${BENCHMARK_INSTALL_DIR}/lib
+)
+
+target_link_libraries(
+  juce_benchmark benchmark benchmark_main utils_benchmarks adawata sndfile ovs_oscillator
+)
+
+add_dependencies(juce_benchmark benchmark_project)

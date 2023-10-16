@@ -140,8 +140,14 @@ class Oscillator {
 
     // Compute the array of I_0
     auto i_array = std::array<std::complex<float>, kNumCoeffs>();
-    for (auto&& [i_0, z, exp_z] : iter::zip(i_array, z_array_, exp_z_array_)) {
-      i_0 = exp_z * (part_a + z * part_b) - part_c - z * part_d;
+    // for (auto&& [i_0, z, exp_z] : iter::zip(i_array, z_array_, exp_z_array_)) {
+    //   i_0 = exp_z * (part_a + z * part_b) - part_c - z * part_d;
+    // }
+    //NOLINTNEXTLINE
+#pragma GCC ivdep
+    for (std::size_t i = 0; i < kNumCoeffs; ++i) {
+      i_array[i] = exp_z_array_[i] * (part_a + z_array_[i] * part_b) - part_c -
+                   z_array_[i] * part_d;
     }
 
     // Setup the computation of I_sum
@@ -160,10 +166,18 @@ class Oscillator {
 
       const auto part_a = (phase_red_bar - phase_span[i_red + 1]) / phase_diff;
 
-      for (auto&& [i_sum, z] : iter::zip(i_array, z_array_)) {
-        i_sum += std::exp(z * part_a) * sign *
-                 (z * qdiff_span[i_red] +
-                  mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]));
+      // for (auto&& [i_sum, z] : iter::zip(i_array, z_array_)) {
+      //   i_sum += std::exp(z * part_a) * sign *
+      //            (z * qdiff_span[i_red] +
+      //             mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]));
+      // }
+//NOLINTNEXTLINE
+#pragma GCC ivdep
+      for (std::size_t i = 0; i < kNumCoeffs; ++i) {
+        i_array[i] += std::exp(z_array_[i] * part_a) * sign *
+                      (z_array_[i] * qdiff_span[i_red] +
+                       mdiff_span[i_red] *
+                           (phase_diff + z_array_[i] * phase_span[i_red + 1]));
       }
     }
 

@@ -34,6 +34,7 @@ set_target_properties(
 target_compile_options(
   adawata
   PUBLIC
+  -ffast-math
   $<$<BOOL:${USE_ASAN}>:-fsanitize=address>
 )
 

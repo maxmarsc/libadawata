@@ -5,6 +5,7 @@
 
 #include "utils_benchmarks.hpp"
 #include <cmath>
+#include "cppitertools/range.hpp"
 
 namespace benchmarks {
 
@@ -30,17 +31,14 @@ for each sample
 
 void generateLinearSweepPhase(std::span<float> dst, float start, float end,
                               float sr) {
-  const auto size    = dst.size();
-  auto crt_freq      = start;
-  auto phase         = 0.1F;
-  const auto f_delta = (end - start) / static_cast<float>(size);
-  // auto delta = crt_freq / sr;
+  const auto f_step = (end - start) / static_cast<float>(dst.size());
+  auto freq         = start;
+  dst[0]            = 0.F;
 
-  for (auto& phase_val : dst) {
-    const auto delta = crt_freq / sr;
-    phase_val        = std::fmod(phase, 1.F);
-    phase += delta;
-    crt_freq += f_delta;
+  for (auto i : iter::range(static_cast<std::size_t>(1), dst.size())) {
+    const auto phase_step = freq / sr;
+    dst[i]                = std::fmod(dst[i - 1] + phase_step, 1.F);
+    freq += f_step;
   }
 }
 

@@ -104,7 +104,7 @@ Checks: >
 # Turn all the warnings from the checks above into errors.
 WarningsAsErrors: "*"
 
-HeaderFilterRegex: ".*\\.hh$"
+HeaderFilterRegex: ".*\\.hpp$"
 
 CheckOptions:
   - { key: readability-identifier-naming.NamespaceCase,          value: lower_case }

@@ -39,8 +39,9 @@ void bmSweepUpOrder2(benchmark::State& state) {
 
   // Init the oscillator
   auto osc = adwt::Oscillator<adwt::FilterType::kType1>{};
-  if (osc.init(std::move(waveform_data)) != 0) {
+  if (osc.init(std::move(waveform_data), std::make_tuple(0.99F, 0.01F)) != 0) {
     std::cerr << "Failed to init oscillator class" << std::endl;
+    std::abort();
   }
 
   // Init the sweep phase data
@@ -48,13 +49,16 @@ void bmSweepUpOrder2(benchmark::State& state) {
   generateLinearSweepPhase(phase_sweep, 20.F, samplerate / 2.F, samplerate);
 
   // Prepare the processing block
-  auto block_dst = std::vector<float>(block_size);
+  auto output_vec = std::vector<float>(num_frames);
 
   for (auto _ : state) {
     for (auto i : iter::range(num_blocks)) {
       auto phase_span = std::span(phase_sweep.begin() + i * block_size,
                                   phase_sweep.begin() + (i + 1) * block_size);
-      osc.process<adwt::Direction::kBidirectionnal>(phase_span, block_dst);
+
+      auto output_span = std::span(output_vec.begin() + i * block_size,
+                                   output_vec.begin() + (i + 1) * block_size);
+      osc.process<adwt::Direction::kBidirectionnal>(phase_span, output_span);
     }
   }
 }
@@ -106,9 +110,10 @@ void bmSweepUpOrder10(benchmark::State& state) {
   }
 }
 
-//NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 BENCHMARK(bmSweepUpOrder2)->RangeMultiplier(2)->Range(16, 2048);
-//NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+// BENCHMARK(bmSweepUpOrder2)->Range(64, 64);
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 BENCHMARK(bmSweepUpOrder10)->RangeMultiplier(2)->Range(16, 2048);
 
 }  // namespace benchmarks
