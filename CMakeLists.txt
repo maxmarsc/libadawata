@@ -5,7 +5,10 @@ project(libadawata VERSION 0.0.1)
 # cmake_policy(SET CMP0053 NEW) cmake_policy(SET CMP0010 NEW) cmake_policy(SET
 # CMP0135 NEW) cmake_policy(SET CMP0091 NEW)
 option(BUILD_TESTING "Enable the build of the tests" On)
-option(BUILD_BENCHMARKS "Enable the build of the benchmarking binaries. Will force BUILD_TESTING" On)
+option(BUILD_BENCHMARKS
+       "Enable the build of the benchmarking binaries. Will force BUILD_TESTING"
+       On
+)
 
 # Debug options
 option(USE_TRACY "Enable tracy profiling of benchmark binaries" Off)
@@ -44,9 +47,8 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
   set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 0)
 endif()
 
-# # ##############################################################################
-# # Benchmarks
-# # ##############################################################################
-# if(BUILD_BENCHMARKS)
-#   add_subdirectory(benchmarks)
-# endif()
+# #
+# ##############################################################################
+# # Benchmarks #
+# ##############################################################################
+# if(BUILD_BENCHMARKS) add_subdirectory(benchmarks) endif()

@@ -1,7 +1,5 @@
-# simplify variable expansion
-# cmake_policy(SET CMP0053 NEW)
-# cmake_policy(SET CMP0010 NEW)
-# cmake_policy(SET CMP0091 NEW)
+# simplify variable expansion cmake_policy(SET CMP0053 NEW) cmake_policy(SET
+# CMP0010 NEW) cmake_policy(SET CMP0091 NEW)
 
 set(SNDFILE_INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/sndfile/install)
 include(ExternalProject)

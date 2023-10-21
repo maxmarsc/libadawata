@@ -14,8 +14,7 @@ add_executable(
 
 target_include_directories(
   libadawata_tests
-  PRIVATE ${PROJECT_SOURCE_DIR}
-  ${SNDFILE_INSTALL_DIR}/include
+  PRIVATE ${PROJECT_SOURCE_DIR} ${SNDFILE_INSTALL_DIR}/include
 )
 
 set_target_properties(
@@ -29,9 +28,7 @@ target_compile_options(
 )
 
 target_link_directories(
-  libadawata_tests
-  PRIVATE
-  ${SNDFILE_INSTALL_DIR}/lib
+  libadawata_tests PRIVATE ${SNDFILE_INSTALL_DIR}/lib
 )
 
 target_link_libraries(
@@ -40,14 +37,12 @@ target_link_libraries(
 
 target_compile_definitions(
   libadawata_tests
-  PRIVATE
-  ASSETS_DIR="${ASSETS_DIR}"
+  PRIVATE ASSETS_DIR="${ASSETS_DIR}"
 )
 
 target_link_options(
-  libadawata_tests
-  PUBLIC
-  $<$<BOOL:${USE_ASAN}>:-fsanitize=address -static-libasan>
+  libadawata_tests PUBLIC $<$<BOOL:${USE_ASAN}>:-fsanitize=address
+  -static-libasan>
 )
 
 add_dependencies(libadawata_tests libsndfile_project)

@@ -7,9 +7,7 @@ add_library(
 
 target_include_directories(
   utils_benchmarks
-  PUBLIC
-  ${PROJECT_SOURCE_DIR}
-  ${ITERTOOLS_INSTALL_DIR}/include
+  PUBLIC ${PROJECT_SOURCE_DIR} ${ITERTOOLS_INSTALL_DIR}/include
 )
 
 set_target_properties(
@@ -32,9 +30,7 @@ add_executable(
 
 target_include_directories(
   adwt_benchmark
-  PRIVATE
-  ${PROJECT_SOURCE_DIR}
-  ${BENCHMARK_INSTALL_DIR}/include
+  PRIVATE ${PROJECT_SOURCE_DIR} ${BENCHMARK_INSTALL_DIR}/include
 )
 
 set_target_properties(
@@ -49,18 +45,20 @@ target_compile_options(
 
 target_compile_definitions(
   adwt_benchmark
-  PRIVATE
-  ASSETS_DIR="${ASSETS_DIR}"
+  PRIVATE ASSETS_DIR="${ASSETS_DIR}"
 )
 
 target_link_directories(
-  adwt_benchmark
-  PRIVATE
-  ${BENCHMARK_INSTALL_DIR}/lib
+  adwt_benchmark PRIVATE ${BENCHMARK_INSTALL_DIR}/lib
 )
 
 target_link_libraries(
-  adwt_benchmark benchmark benchmark_main utils_benchmarks adawata sndfile
+  adwt_benchmark
+  benchmark
+  benchmark_main
+  utils_benchmarks
+  adawata
+  sndfile
 )
 
 add_dependencies(adwt_benchmark benchmark_project)
@@ -77,9 +75,7 @@ add_executable(
 
 target_include_directories(
   juce_benchmark
-  PRIVATE
-  ${PROJECT_SOURCE_DIR}
-  ${BENCHMARK_INSTALL_DIR}/include
+  PRIVATE ${PROJECT_SOURCE_DIR} ${BENCHMARK_INSTALL_DIR}/include
 )
 
 set_target_properties(
@@ -94,18 +90,21 @@ target_compile_options(
 
 target_compile_definitions(
   juce_benchmark
-  PRIVATE
-  ASSETS_DIR="${ASSETS_DIR}"
+  PRIVATE ASSETS_DIR="${ASSETS_DIR}"
 )
 
 target_link_directories(
-  juce_benchmark
-  PRIVATE
-  ${BENCHMARK_INSTALL_DIR}/lib
+  juce_benchmark PRIVATE ${BENCHMARK_INSTALL_DIR}/lib
 )
 
 target_link_libraries(
-  juce_benchmark benchmark benchmark_main utils_benchmarks adawata sndfile ovs_oscillator
+  juce_benchmark
+  benchmark
+  benchmark_main
+  utils_benchmarks
+  adawata
+  sndfile
+  ovs_oscillator
 )
 
 add_dependencies(juce_benchmark benchmark_project)

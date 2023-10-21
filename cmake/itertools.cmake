@@ -12,4 +12,7 @@ ExternalProject_Add(
              -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
 )
 
-set(ITERTOOLS_INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/itertools/install PARENT_SCOPE)
+set(ITERTOOLS_INSTALL_DIR
+    ${CMAKE_CURRENT_BINARY_DIR}/itertools/install
+    PARENT_SCOPE
+)

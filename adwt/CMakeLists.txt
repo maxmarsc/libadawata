@@ -6,46 +6,32 @@ add_library(
 
 target_include_directories(
   adawata
-  PUBLIC
-  ${PROJECT_SOURCE_DIR}
-  ${ITERTOOLS_INSTALL_DIR}/include
-  ${SOXR_INSTALL_DIR}/include
+  PUBLIC ${PROJECT_SOURCE_DIR} ${ITERTOOLS_INSTALL_DIR}/include
+         ${SOXR_INSTALL_DIR}/include
 )
 
 target_link_directories(
-  adawata
-  PUBLIC
-  ${SOXR_INSTALL_DIR}/lib
+  adawata PUBLIC ${SOXR_INSTALL_DIR}/lib
 )
 
 target_link_libraries(
   adawata
-  PUBLIC
-  soxr
-  # $<$<BOOL:${USE_ASAN}>:asan>
+  PUBLIC soxr
+         # $<$<BOOL:${USE_ASAN}>:asan>
 )
 
 set_target_properties(
   adawata
-  PROPERTIES
-  CXX_STANDARD 20
+  PROPERTIES CXX_STANDARD 20
 )
 
 target_compile_options(
   adawata
-  PUBLIC
-  -ffast-math
-  $<$<BOOL:${USE_ASAN}>:-fsanitize=address>
+  PUBLIC -ffast-math $<$<BOOL:${USE_ASAN}>:-fsanitize=address>
 )
 
 target_link_options(
-  adawata
-  PUBLIC
-  $<$<BOOL:${USE_ASAN}>:-fsanitize=address -static-libasan>
+  adawata PUBLIC $<$<BOOL:${USE_ASAN}>:-fsanitize=address -static-libasan>
 )
 
-add_dependencies(
-  adawata
-  itertools_project
-  soxr_project
-)
+add_dependencies(adawata itertools_project soxr_project)
