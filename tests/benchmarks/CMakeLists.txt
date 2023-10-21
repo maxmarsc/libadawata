@@ -20,6 +20,8 @@ target_compile_options(
   PRIVATE -Wall -Wextra
 )
 
+add_dependencies(utils_benchmarks itertools_project)
+
 # ##############################################################################
 # libadawata
 # ##############################################################################
@@ -31,6 +33,7 @@ add_executable(
 target_include_directories(
   adwt_benchmark
   PRIVATE ${PROJECT_SOURCE_DIR} ${BENCHMARK_INSTALL_DIR}/include
+          ${SNDFILE_INSTALL_DIR}/include
 )
 
 set_target_properties(
@@ -50,6 +53,7 @@ target_compile_definitions(
 
 target_link_directories(
   adwt_benchmark PRIVATE ${BENCHMARK_INSTALL_DIR}/lib
+  ${SNDFILE_INSTALL_DIR}/lib
 )
 
 target_link_libraries(
@@ -61,7 +65,7 @@ target_link_libraries(
   sndfile
 )
 
-add_dependencies(adwt_benchmark benchmark_project)
+add_dependencies(adwt_benchmark benchmark_project libsndfile_project)
 
 add_subdirectory(source)
 
@@ -76,6 +80,7 @@ add_executable(
 target_include_directories(
   juce_benchmark
   PRIVATE ${PROJECT_SOURCE_DIR} ${BENCHMARK_INSTALL_DIR}/include
+          ${SNDFILE_INSTALL_DIR}/include
 )
 
 set_target_properties(
@@ -95,6 +100,7 @@ target_compile_definitions(
 
 target_link_directories(
   juce_benchmark PRIVATE ${BENCHMARK_INSTALL_DIR}/lib
+  ${SNDFILE_INSTALL_DIR}/lib
 )
 
 target_link_libraries(
@@ -107,4 +113,4 @@ target_link_libraries(
   ovs_oscillator
 )
 
-add_dependencies(juce_benchmark benchmark_project)
+add_dependencies(juce_benchmark benchmark_project libsndfile_project)

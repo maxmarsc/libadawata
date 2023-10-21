@@ -12,4 +12,4 @@ namespace benchmarks {
 void generateLinearSweepPhase(std::span<float> dst, float start, float end,
                               float sr);
 
-};  // namespace benchmarks
+}  // namespace benchmarks

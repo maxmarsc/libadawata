@@ -48,12 +48,13 @@ class Oscillator {
       std::unique_ptr<WaveformData>&& waveform_data,
       std::tuple<float, float> init_state = std::make_tuple(0.F, 0.4F)) {
     assert(waveform_data_ != nullptr);
-    if (waveform_data == nullptr)
+    auto waveform_data_ptr = std::move(waveform_data);
+    if (waveform_data_ptr == nullptr)
       return nullptr;
-    // waveform_data.swap(waveform_data_);
+    waveform_data_ptr.swap(waveform_data_);
     resetInternals(std::get<0>(init_state), std::get<1>(init_state));
     crt_waveform_ = 0;
-    return waveform_data;
+    return waveform_data_ptr;
   }
 
   //============================================================================

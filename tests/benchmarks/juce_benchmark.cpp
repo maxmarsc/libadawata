@@ -8,6 +8,7 @@
 #include <iostream>
 #include <sndfile.hh>
 
+#include "saw_2048.hpp"
 #include "source/ovs_oscillator.hpp"
 #include "tests/benchmarks/utils_benchmarks.hpp"
 
@@ -21,22 +22,22 @@ void bmSweep(benchmark::State& state) {
   const auto upsampling_ratio = 8;
   constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
 
-  // Load the waveform file
-  auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
-  const auto waveform_len = waveform_sndfile.frames();
-  auto waveform_vec =
-      std::vector<float>(static_cast<std::size_t>(waveform_len));
-  auto read = waveform_sndfile.readf(waveform_vec.data(), waveform_len);
-  if (read != waveform_len || waveform_len != 2048) {
-    std::cerr << "Failed to read waveform file" << std::endl;
-    std::abort();
-  }
+  // // Load the waveform file
+  // auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
+  // const auto waveform_len = waveform_sndfile.frames();
+  // auto waveform_vec =
+  //     std::vector<float>(static_cast<std::size_t>(waveform_len));
+  // auto read = waveform_sndfile.readf(waveform_vec.data(), waveform_len);
+  // if (read != waveform_len || waveform_len != 2048) {
+  //   std::cerr << "Failed to read waveform file" << std::endl;
+  //   std::abort();
+  // }
 
   // Init the oscilator
   using Oscillator = ovs::OvsOscillator<ovs::ResamplingBackend::kJuce>;
   Oscillator osc(
       {ovs::DownsamplerJUCE::FilterType::filterHalfBandPolyphaseIIR, true});
-  if (osc.init(waveform_vec, block_size, samplerate, upsampling_ratio) != 0) {
+  if (osc.init(kSawWaveform, block_size, samplerate, upsampling_ratio) != 0) {
     std::cerr << "Failed to init oscillator class" << std::endl;
     std::abort();
   }

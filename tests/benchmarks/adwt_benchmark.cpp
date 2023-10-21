@@ -8,30 +8,31 @@
 #include <sndfile.hh>
 
 #include "adwt/adwt.hpp"
+#include "saw_2048.hpp"
 #include "tests/benchmarks/utils_benchmarks.hpp"
 
 namespace benchmarks {
 
 void bmSweepUpOrder2(benchmark::State& state) {
-  const auto block_size       = state.range(0);
-  const auto num_frames       = 2048 * 100;
-  const auto num_blocks       = num_frames / block_size;
-  const auto samplerate       = 44100.F;
-  constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
+  const auto block_size = state.range(0);
+  const auto num_frames = 2048 * 100;
+  const auto num_blocks = num_frames / block_size;
+  const auto samplerate = 44100.F;
+  // constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
 
-  // Load the waveform file
-  auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
-  const auto waveform_len = waveform_sndfile.frames();
-  auto waveform_vec       = std::vector<float>(waveform_len);
-  auto read = waveform_sndfile.readf(waveform_vec.data(), waveform_len);
-  if (read != waveform_len || waveform_len != 2048) {
-    std::cerr << "Failed to read waveform file" << std::endl;
-    std::abort();
-  }
+  // // Load the waveform file
+  // auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
+  // const auto waveform_len = waveform_sndfile.frames();
+  // auto waveform_vec       = std::vector<float>(waveform_len);
+  // auto read = waveform_sndfile.readf(waveform_vec.data(), waveform_len);
+  // if (read != waveform_len || waveform_len != 2048) {
+  //   std::cerr << "Failed to read waveform file" << std::endl;
+  //   std::abort();
+  // }
 
   // Init the waveform data
   auto waveform_data =
-      adwt::WaveformData::build(waveform_vec, 1, static_cast<int>(samplerate));
+      adwt::WaveformData::build(kSawWaveform, 1, static_cast<int>(samplerate));
   if (waveform_data == nullptr) {
     std::cerr << "Failed to build WaveformData object" << std::endl;
     std::abort();
@@ -70,19 +71,19 @@ void bmSweepUpOrder4(benchmark::State& state) {
   const auto samplerate       = 44100.F;
   constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
 
-  // Load the waveform file
-  auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
-  const auto waveform_len = waveform_sndfile.frames();
-  auto waveform_vec       = std::vector<float>(waveform_len);
-  auto read = waveform_sndfile.readf(waveform_vec.data(), waveform_len);
-  if (read != waveform_len || waveform_len != 2048) {
-    std::cerr << "Failed to read waveform file" << std::endl;
-    std::abort();
-  }
+  // // Load the waveform file
+  // auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
+  // const auto waveform_len = waveform_sndfile.frames();
+  // auto waveform_vec       = std::vector<float>(waveform_len);
+  // auto read = waveform_sndfile.readf(waveform_vec.data(), waveform_len);
+  // if (read != waveform_len || waveform_len != 2048) {
+  //   std::cerr << "Failed to read waveform file" << std::endl;
+  //   std::abort();
+  // }
 
   // Init the waveform data
   auto waveform_data =
-      adwt::WaveformData::build(waveform_vec, 1, static_cast<int>(samplerate));
+      adwt::WaveformData::build(kSawWaveform, 1, static_cast<int>(samplerate));
   if (waveform_data == nullptr) {
     std::cerr << "Failed to build WaveformData object" << std::endl;
     std::abort();
@@ -117,19 +118,19 @@ void bmSweepUpOrder6(benchmark::State& state) {
   const auto samplerate       = 44100.F;
   constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
 
-  // Load the waveform file
-  auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
-  const auto waveform_len = waveform_sndfile.frames();
-  auto waveform_vec       = std::vector<float>(waveform_len);
-  auto read = waveform_sndfile.readf(waveform_vec.data(), waveform_len);
-  if (read != waveform_len || waveform_len != 2048) {
-    std::cerr << "Failed to read waveform file" << std::endl;
-    std::abort();
-  }
+  // // Load the waveform file
+  // auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
+  // const auto waveform_len = waveform_sndfile.frames();
+  // auto waveform_vec       = std::vector<float>(waveform_len);
+  // auto read = waveform_sndfile.readf(waveform_vec.data(), waveform_len);
+  // if (read != waveform_len || waveform_len != 2048) {
+  //   std::cerr << "Failed to read waveform file" << std::endl;
+  //   std::abort();
+  // }
 
   // Init the waveform data
   auto waveform_data =
-      adwt::WaveformData::build(waveform_vec, 1, static_cast<int>(samplerate));
+      adwt::WaveformData::build(kSawWaveform, 1, static_cast<int>(samplerate));
   if (waveform_data == nullptr) {
     std::cerr << "Failed to build WaveformData object" << std::endl;
     std::abort();
@@ -164,19 +165,19 @@ void bmSweepUpOrder8(benchmark::State& state) {
   const auto samplerate       = 44100.F;
   constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
 
-  // Load the waveform file
-  auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
-  const auto waveform_len = waveform_sndfile.frames();
-  auto waveform_vec       = std::vector<float>(waveform_len);
-  auto read = waveform_sndfile.readf(waveform_vec.data(), waveform_len);
-  if (read != waveform_len || waveform_len != 2048) {
-    std::cerr << "Failed to read waveform file" << std::endl;
-    std::abort();
-  }
+  // // Load the waveform file
+  // auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
+  // const auto waveform_len = waveform_sndfile.frames();
+  // auto waveform_vec       = std::vector<float>(waveform_len);
+  // auto read = waveform_sndfile.readf(waveform_vec.data(), waveform_len);
+  // if (read != waveform_len || waveform_len != 2048) {
+  //   std::cerr << "Failed to read waveform file" << std::endl;
+  //   std::abort();
+  // }
 
   // Init the waveform data
   auto waveform_data =
-      adwt::WaveformData::build(waveform_vec, 1, static_cast<int>(samplerate));
+      adwt::WaveformData::build(kSawWaveform, 1, static_cast<int>(samplerate));
   if (waveform_data == nullptr) {
     std::cerr << "Failed to build WaveformData object" << std::endl;
     std::abort();
@@ -211,19 +212,19 @@ void bmSweepUpOrder10(benchmark::State& state) {
   const auto samplerate       = 44100.F;
   constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
 
-  // Load the waveform file
-  auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
-  const auto waveform_len = waveform_sndfile.frames();
-  auto waveform_vec       = std::vector<float>(waveform_len);
-  auto read = waveform_sndfile.readf(waveform_vec.data(), waveform_len);
-  if (read != waveform_len || waveform_len != 2048) {
-    std::cerr << "Failed to read waveform file" << std::endl;
-    std::abort();
-  }
+  // // Load the waveform file
+  // auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
+  // const auto waveform_len = waveform_sndfile.frames();
+  // auto waveform_vec       = std::vector<float>(waveform_len);
+  // auto read = waveform_sndfile.readf(waveform_vec.data(), waveform_len);
+  // if (read != waveform_len || waveform_len != 2048) {
+  //   std::cerr << "Failed to read waveform file" << std::endl;
+  //   std::abort();
+  // }
 
   // Init the waveform data
   auto waveform_data =
-      adwt::WaveformData::build(waveform_vec, 1, static_cast<int>(samplerate));
+      adwt::WaveformData::build(kSawWaveform, 1, static_cast<int>(samplerate));
   if (waveform_data == nullptr) {
     std::cerr << "Failed to build WaveformData object" << std::endl;
     std::abort();

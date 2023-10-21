@@ -3,8 +3,8 @@
 * Created by maxmarsc, 08/10/2023
 */
 
-#include "ovs_oscillator.hpp"
 #include <cppitertools/zip.hpp>
+#include "ovs_oscillator.hpp"
 
 #include "adwt/maths.hpp"
 
@@ -15,7 +15,7 @@ OvsOscillator<B>::OvsOscillator(const DownsamplerCtorArgs<Downsampler<B>>& args)
     : downsampler_(args) {}
 
 template <ResamplingBackend B>
-[[nodiscard]] int OvsOscillator<B>::init(std::span<float> waveform,
+[[nodiscard]] int OvsOscillator<B>::init(std::span<const float> waveform,
                                          int block_size, float samplerate,
                                          int ratio) {
   if (ratio <= 0 || block_size <= 0)

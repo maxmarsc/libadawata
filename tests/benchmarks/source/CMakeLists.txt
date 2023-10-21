@@ -1,5 +1,7 @@
 include(FetchContent)
+# include(curl)
 
+set(JUCE_USE_CURL OFF)
 FetchContent_Declare(
   juce
   GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
@@ -21,17 +23,14 @@ target_include_directories(
 )
 
 target_link_directories(
-  ovs_oscillator PUBLIC ${ZITA_INSTALL_DIR}/lib
+  ovs_oscillator PUBLIC
 )
 
 target_link_libraries(
   ovs_oscillator
-  PUBLIC adawata
-         juce::juce_recommended_config_flags
-         juce::juce_recommended_lto_flags
-         juce::juce_recommended_warning_flags
-         juce::juce_dsp
-         curl
+  PUBLIC adawata juce::juce_recommended_config_flags
+         # juce::juce_recommended_lto_flags
+         juce::juce_recommended_warning_flags juce::juce_dsp
 )
 
 set_target_properties(
@@ -42,6 +41,11 @@ set_target_properties(
 target_compile_options(
   ovs_oscillator
   PRIVATE -Wall -Wextra -ffast-math $<$<BOOL:${USE_ASAN}>:-fsanitize=address>
+)
+
+target_compile_definitions(
+  ovs_oscillator
+  PUBLIC JUCE_USE_CURL=0
 )
 
 target_link_options(
