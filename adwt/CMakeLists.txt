@@ -1,3 +1,5 @@
+include(xsimd)
+
 add_library(
   adawata
   ${CMAKE_CURRENT_SOURCE_DIR}/adwt.cpp
@@ -16,7 +18,7 @@ target_link_directories(
 
 target_link_libraries(
   adawata
-  PUBLIC soxr
+  PUBLIC soxr xsimd
          # $<$<BOOL:${USE_ASAN}>:asan>
 )
 
@@ -27,7 +29,10 @@ set_target_properties(
 
 target_compile_options(
   adawata
-  PUBLIC -ffast-math $<$<BOOL:${USE_ASAN}>:-fsanitize=address>
+  PUBLIC  -ffast-math 
+  $<$<BOOL:${USE_ASAN}>:-fsanitize=address>
+  # -fopt-info-vec-optimized
+  # -fopt-info-vec-missed
 )
 
 target_link_options(

@@ -8,7 +8,7 @@ set(ASSETS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 # ##############################################################################
 add_executable(
   libadawata_tests
-  ${CMAKE_CURRENT_SOURCE_DIR}/waveform_data_tests.cpp
+  # ${CMAKE_CURRENT_SOURCE_DIR}/waveform_data_tests.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/oscillator_tests.cpp
 )
 

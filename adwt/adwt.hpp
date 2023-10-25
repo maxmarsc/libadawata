@@ -16,6 +16,7 @@
 #include "cppitertools/range.hpp"
 
 #include <cppitertools/zip.hpp>
+#include <xsimd/xsimd.hpp>
 
 namespace adwt {
 
@@ -106,11 +107,104 @@ class Oscillator {
     }
   }
 
-  std::array<std::complex<float>, kNumCoeffs> computeBiI(int mipmap_idx,
-                                                         int jmin, int jmin_red,
-                                                         int jmax_p_red,
-                                                         float phase_diff,
-                                                         float phase_red) {
+  inline void computeI0(
+      std::array<std::complex<float>, kNumCoeffs>& aligned_array,
+      int mipmap_idx, int idx_prev_bound, int idx_next_bound, float phase_diff,
+      float prev_phase_red_bar, float phase_red_bar) const noexcept {
+    // Get the span of each
+    auto m_span     = waveform_data_->m(crt_waveform_, mipmap_idx);
+    auto q_span     = waveform_data_->q(crt_waveform_, mipmap_idx);
+    auto mdiff_span = waveform_data_->mDiff(crt_waveform_, mipmap_idx);
+    auto qdiff_span = waveform_data_->qDiff(crt_waveform_, mipmap_idx);
+    auto phase_span = waveform_data_->phases(mipmap_idx);
+
+    // Compute the recurrent parts of I_0
+    const auto part_a = m_span[idx_prev_bound] * phase_diff;
+    const auto part_b =
+        m_span[idx_prev_bound] * prev_phase_red_bar + q_span[idx_prev_bound];
+    const auto part_c = m_span[idx_next_bound] * phase_diff;
+    const auto part_d =
+        m_span[idx_next_bound] * phase_red_bar + q_span[idx_next_bound];
+
+    // Compute the array of I_0
+    // for (auto&& [i_0, z, exp_z] : iter::zip(i_array, z_array_, exp_z_array_)) {
+    //   i_0 = exp_z * (part_a + z * part_b) - part_c - z * part_d;
+    // }
+    //NOLINTNEXTLINE
+#pragma GCC ivdep
+    for (std::size_t i = 0; i < kNumCoeffs; ++i) {
+      aligned_array[i] = exp_z_array_[i] * (part_a + z_array_[i] * part_b) -
+                         part_c - z_array_[i] * part_d;
+    }
+  }
+
+  inline void computeISumFwd(
+      std::array<std::complex<float>, kNumCoeffs>& aligned_array,
+      int mipmap_idx, int jmin_red, int jmax_p_red, float phase_diff,
+      float phase_red) const noexcept {
+    const auto waveform_len = waveform_data_->waveformLen(mipmap_idx);
+    const auto born_sup =
+        jmax_p_red + waveform_len * static_cast<int>(jmin_red > jmax_p_red);
+
+    // Get the spans
+    auto mdiff_span = waveform_data_->mDiff(crt_waveform_, mipmap_idx);
+    auto qdiff_span = waveform_data_->qDiff(crt_waveform_, mipmap_idx);
+    auto phase_span = waveform_data_->phases(mipmap_idx);
+
+    // Compute the array of I_sum
+    for (auto i : iter::range(jmin_red, born_sup)) {
+      const auto i_red = maths::reduce(i, waveform_len);
+      const auto phase_red_bar =
+          phase_red + static_cast<float>(i_red > jmax_p_red);
+
+      const auto part_a = (phase_red_bar - phase_span[i_red + 1]) / phase_diff;
+
+      for (auto&& [i_sum, z] : iter::zip(aligned_array, z_array_)) {
+        i_sum += std::exp(z * part_a) *
+                 (z * qdiff_span[i_red] +
+                  mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]));
+      }
+    }
+  }
+
+  inline void computeISumBwd(
+      std::array<std::complex<float>, kNumCoeffs>& aligned_array,
+      int mipmap_idx, int jmin, int jmin_red, int jmax_p_red, float phase_diff,
+      float phase_red) const noexcept {
+    assert(phase_diff < 0);
+    const auto waveform_len = waveform_data_->waveformLen(mipmap_idx);
+    const auto born_sup =
+        jmax_p_red + waveform_len * static_cast<int>(jmin_red > jmax_p_red);
+    const auto cycle_offset = jmin != 0 && jmin_red > jmax_p_red ? -1.F : 0.F;
+
+    // Get the spans
+    auto mdiff_span = waveform_data_->mDiff(crt_waveform_, mipmap_idx);
+    auto qdiff_span = waveform_data_->qDiff(crt_waveform_, mipmap_idx);
+    auto phase_span = waveform_data_->phases(mipmap_idx);
+
+    // Compute the array of I_sum
+    for (auto i : iter::range(jmin_red, born_sup)) {
+      const auto i_red = maths::reduce(i, waveform_len);
+      const auto phase_red_bar =
+          phase_red + cycle_offset + static_cast<float>(i_red > jmax_p_red);
+
+      const auto part_a = (phase_red_bar - phase_span[i_red + 1]) / phase_diff;
+
+//NOLINTNEXTLINE
+#pragma GCC ivdep
+      for (std::size_t i = 0; i < kNumCoeffs; ++i) {
+        aligned_array[i] -=
+            std::exp(z_array_[i] * part_a) *
+            (z_array_[i] * qdiff_span[i_red] +
+             mdiff_span[i_red] *
+                 (phase_diff + z_array_[i] * phase_span[i_red + 1]));
+      }
+    }
+  }
+
+  std::array<std::complex<float>, kNumCoeffs> computeBiI(
+      int mipmap_idx, int jmin, int jmin_red, int jmax_p_red, float phase_diff,
+      float phase_red) noexcept {
     assert(waveform_data_ != nullptr);
     const auto waveform_len = waveform_data_->waveformLen(mipmap_idx);
     const auto forward      = phase_diff > 0;
@@ -131,147 +225,124 @@ class Oscillator {
     auto qdiff_span = waveform_data_->qDiff(crt_waveform_, mipmap_idx);
     auto phase_span = waveform_data_->phases(mipmap_idx);
 
-    // Compute the recurrent parts of I_0
-    const auto part_a = m_span[idx_prev_bound] * phase_diff;
-    const auto part_b =
-        m_span[idx_prev_bound] * prev_phase_red_bar + q_span[idx_prev_bound];
-    const auto part_c = m_span[idx_next_bound] * phase_diff;
-    const auto part_d =
-        m_span[idx_next_bound] * phase_red_bar + q_span[idx_next_bound];
+    // // Compute the recurrent parts of I_0
+    // const auto part_a = m_span[idx_prev_bound] * phase_diff;
+    // const auto part_b =
+    //     m_span[idx_prev_bound] * prev_phase_red_bar + q_span[idx_prev_bound];
+    // const auto part_c = m_span[idx_next_bound] * phase_diff;
+    // const auto part_d =
+    //     m_span[idx_next_bound] * phase_red_bar + q_span[idx_next_bound];
 
     // Compute the array of I_0
-    auto i_array = std::array<std::complex<float>, kNumCoeffs>();
+    alignas(alignof(std::complex<float>)) auto i_array =
+        std::array<std::complex<float>, kNumCoeffs>();
     // for (auto&& [i_0, z, exp_z] : iter::zip(i_array, z_array_, exp_z_array_)) {
     //   i_0 = exp_z * (part_a + z * part_b) - part_c - z * part_d;
     // }
     //NOLINTNEXTLINE
-#pragma GCC ivdep
-    for (std::size_t i = 0; i < kNumCoeffs; ++i) {
-      i_array[i] = exp_z_array_[i] * (part_a + z_array_[i] * part_b) - part_c -
-                   z_array_[i] * part_d;
+    // #pragma GCC ivdep
+    //     for (std::size_t i = 0; i < kNumCoeffs; ++i) {
+    //       i_array[i] = exp_z_array_[i] * (part_a + z_array_[i] * part_b) - part_c -
+    //                    z_array_[i] * part_d;
+    //     }
+    computeI0(i_array, mipmap_idx, idx_prev_bound, idx_next_bound, phase_diff,
+              prev_phase_red_bar, phase_red_bar);
+
+    if (forward) {
+      computeISumFwd(i_array, mipmap_idx, jmin_red, jmax_p_red, phase_diff,
+                     phase_red);
+    } else {
+      computeISumBwd(i_array, mipmap_idx, jmin, jmin_red, jmax_p_red,
+                     phase_diff, phase_red);
     }
+    // // Setup the computation of I_sum
+    // const auto born_sup =
+    //     jmax_p_red + waveform_len * static_cast<int>(jmin_red > jmax_p_red);
+    // const auto cycle_offset =
+    //     !forward && jmin != 0 && jmin_red > jmax_p_red ? -1.F : 0.F;
 
-    // Setup the computation of I_sum
-    const auto born_sup =
-        jmax_p_red + waveform_len * static_cast<int>(jmin_red > jmax_p_red);
-    const auto cycle_offset =
-        !forward && jmin != 0 && jmin_red > jmax_p_red ? -1.F : 0.F;
-
-    const auto sign = static_cast<float>(maths::sign(phase_diff));
+    // const auto sign = static_cast<float>(maths::sign(phase_diff));
 
     // Compute the array of I_sum
-    for (auto i : iter::range(jmin_red, born_sup)) {
-      const auto i_red = maths::reduce(i, waveform_len);
-      const auto phase_red_bar =
-          phase_red + cycle_offset + static_cast<float>(i_red > jmax_p_red);
+    // for (auto i : iter::range(jmin_red, born_sup)) {
+    //   const auto i_red = maths::reduce(i, waveform_len);
+    //   const auto phase_red_bar =
+    //       phase_red + cycle_offset + static_cast<float>(i_red > jmax_p_red);
 
-      const auto part_a = (phase_red_bar - phase_span[i_red + 1]) / phase_diff;
+    //   const auto part_a = (phase_red_bar - phase_span[i_red + 1]) / phase_diff;
 
-      // for (auto&& [i_sum, z] : iter::zip(i_array, z_array_)) {
-      //   i_sum += std::exp(z * part_a) * sign *
-      //            (z * qdiff_span[i_red] +
-      //             mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]));
-      // }
-//NOLINTNEXTLINE
-#pragma GCC ivdep
-      for (std::size_t i = 0; i < kNumCoeffs; ++i) {
-        i_array[i] += std::exp(z_array_[i] * part_a) * sign *
-                      (z_array_[i] * qdiff_span[i_red] +
-                       mdiff_span[i_red] *
-                           (phase_diff + z_array_[i] * phase_span[i_red + 1]));
-      }
-    }
+    // for (auto&& [i_sum, z] : iter::zip(i_array, z_array_)) {
+    //   i_sum += std::exp(z * part_a) * sign *
+    //            (z * qdiff_span[i_red] +
+    //             mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]));
+    // }
+    // //NOLINTNEXTLINE
+    // #pragma GCC ivdep
+    //       for (std::size_t i = 0; i < kNumCoeffs; ++i) {
+    //         i_array[i] += std::exp(z_array_[i] * part_a) * sign *
+    //                       (z_array_[i] * qdiff_span[i_red] +
+    //                        mdiff_span[i_red] *
+    //                            (phase_diff + z_array_[i] * phase_span[i_red + 1]));
+    //       }
+    //     }
 
     return i_array;
   }
 
-  std::array<std::complex<float>, kNumCoeffs> computeFwdI(int mipmap_idx,
-                                                          int jmin_red,
-                                                          int jmax_p_red,
-                                                          float phase_diff,
-                                                          float phase_red) {
+  std::array<std::complex<float>, kNumCoeffs> computeFwdI(
+      int mipmap_idx, int jmin_red, int jmax_p_red, float phase_diff,
+      float phase_red) const noexcept {
     assert(waveform_data_ != nullptr);
-    const auto waveform_len = waveform_data_->waveformLen(mipmap_idx);
+    // const auto waveform_len = waveform_data_->waveformLen(mipmap_idx);
     const auto prev_phase_red_bar =
         prev_phase_red_ + static_cast<int>(prev_phase_red_ == 0.F);
 
     // Get the span of each
-    auto m_span     = waveform_data_->m(crt_waveform_, mipmap_idx);
-    auto q_span     = waveform_data_->q(crt_waveform_, mipmap_idx);
-    auto mdiff_span = waveform_data_->mDiff(crt_waveform_, mipmap_idx);
-    auto qdiff_span = waveform_data_->qDiff(crt_waveform_, mipmap_idx);
-    auto phase_span = waveform_data_->phases(mipmap_idx);
+    // auto m_span     = waveform_data_->m(crt_waveform_, mipmap_idx);
+    // auto q_span     = waveform_data_->q(crt_waveform_, mipmap_idx);
+    // auto mdiff_span = waveform_data_->mDiff(crt_waveform_, mipmap_idx);
+    // auto qdiff_span = waveform_data_->qDiff(crt_waveform_, mipmap_idx);
+    // auto phase_span = waveform_data_->phases(mipmap_idx);
 
-    // Compute the recurrent parts of I_0
-    const auto part_a = m_span[jmin_red] * phase_diff;
-    const auto part_b =
-        m_span[jmin_red] * prev_phase_red_bar + q_span[jmin_red];
-    const auto part_c = m_span[jmax_p_red] * phase_diff;
-    const auto part_d = m_span[jmax_p_red] * phase_red + q_span[jmax_p_red];
+    // // Compute the recurrent parts of I_0
+    // const auto part_a = m_span[jmin_red] * phase_diff;
+    // const auto part_b =
+    //     m_span[jmin_red] * prev_phase_red_bar + q_span[jmin_red];
+    // const auto part_c = m_span[jmax_p_red] * phase_diff;
+    // const auto part_d = m_span[jmax_p_red] * phase_red + q_span[jmax_p_red];
 
     // Compute the array of I_0
-    auto i_array = std::array<std::complex<float>, kNumCoeffs>();
-    for (auto&& [i_0, z, exp_z] : iter::zip(i_array, z_array_, exp_z_array_)) {
-      i_0 = exp_z * (part_a + z * part_b) - part_c - z * part_d;
-    }
+    alignas(alignof(std::complex<float>)) auto i_array =
+        std::array<std::complex<float>, kNumCoeffs>();
+    // for (auto&& [i_0, z, exp_z] : iter::zip(i_array, z_array_, exp_z_array_)) {
+    //   i_0 = exp_z * (part_a + z * part_b) - part_c - z * part_d;
+    // }
+    computeI0(i_array, mipmap_idx, jmin_red, jmax_p_red, phase_diff,
+              prev_phase_red_bar, phase_red);
 
-    // Setup the computation of I_sum
-    const auto born_sup =
-        jmax_p_red + waveform_len * static_cast<int>(jmin_red > jmax_p_red);
+    computeISumFwd(i_array, mipmap_idx, jmin_red, jmax_p_red, phase_diff,
+                   phase_red);
+    // // Setup the computation of I_sum
+    // const auto born_sup =
+    //     jmax_p_red + waveform_len * static_cast<int>(jmin_red > jmax_p_red);
 
-    // Compute the array of I_sum
-    for (auto i : iter::range(jmin_red, born_sup)) {
-      const auto i_red = maths::reduce(i, waveform_len);
-      const auto phase_red_bar =
-          phase_red + static_cast<float>(i_red > jmax_p_red);
+    // // Compute the array of I_sum
+    // for (auto i : iter::range(jmin_red, born_sup)) {
+    //   const auto i_red = maths::reduce(i, waveform_len);
+    //   const auto phase_red_bar =
+    //       phase_red + static_cast<float>(i_red > jmax_p_red);
 
-      const auto part_a = (phase_red_bar - phase_span[i_red + 1]) / phase_diff;
+    //   const auto part_a = (phase_red_bar - phase_span[i_red + 1]) / phase_diff;
 
-      for (auto&& [i_sum, z] : iter::zip(i_array, z_array_)) {
-        i_sum += std::exp(z * part_a) *
-                 (z * qdiff_span[i_red] +
-                  mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]));
-      }
-    }
+    //   for (auto&& [i_sum, z] : iter::zip(i_array, z_array_)) {
+    //     i_sum += std::exp(z * part_a) *
+    //              (z * qdiff_span[i_red] +
+    //               mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]));
+    //   }
+    // }
 
     return i_array;
   }
-
-  /**
-    def compute_I_bi(m, q, m_diff, q_diff, X, jmin, jmin_red, jmax_p_red, beta, expbeta, x_diff, prev_x_red, x_red) -> complex:
-    frames = m.shape[0]
-    prev_x_red_bar = prev_x_red + (prev_x_red == 0.0) * (x_diff > 0)
-    x_red_bar = x_red + (x_red == 0.0) * (x_diff < 0)
-
-    if x_diff > 0:
-        idx_prev_bound = jmin_red
-        idx_next_bound = jmax_p_red
-    else:
-        idx_prev_bound = jmax_p_red
-        idx_next_bound = jmin_red
-
-    I =  expbeta\
-            * (m[idx_prev_bound] * x_diff + beta * (m[idx_prev_bound] * prev_x_red_bar + q[idx_prev_bound]))\
-            - m[idx_next_bound] * x_diff\
-            - beta * (m[idx_next_bound] * x_red_bar + q[idx_next_bound])
-
-
-    I_sum = 0
-    born_sup = jmax_p_red + frames * (jmin_red > jmax_p_red)
-    if x_diff < 0 and jmin != 0 and jmin_red > jmax_p_red:
-        cycle_offset = -1.0
-    else:
-        cycle_offset = 0.0
-    for i in range(jmin_red, born_sup):
-        i_red = i % frames
-        x_red_bar = x_red + cycle_offset + (i_red > jmax_p_red)
-
-        I_sum += cexp(beta * (x_red_bar - X[i_red + 1])/x_diff)\
-                    * (beta * q_diff[i_red] + m_diff[i_red] * (x_diff + beta * X[i_red + 1]))
-        
-    # return (I + np.sign(x_diff) * I_sum) / (beta**2)
-    return I + I_sum
-  */
 
   void processFwd(std::span<const float> phases, std::span<float> output) {
     assert(waveform_data_ != nullptr);
@@ -363,6 +434,7 @@ class Oscillator {
       prev_mipmap_idx_  = mipmap_idx;
     }
   }
+
   void processBi(std::span<const float> phases, std::span<float> output) {
     assert(waveform_data_ != nullptr);
     assert(phases.size() == output.size());

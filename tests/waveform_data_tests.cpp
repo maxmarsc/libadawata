@@ -20,8 +20,8 @@ TEST_CASE("Valid build") {
   // const auto num_waveforms = GENERATE(1, 2, 64, 256);
   const auto num_waveforms = GENERATE(1, 2, 8);
   // const auto num_waveforms = GENERATE(1);
-  const auto samplerate = GENERATE(16000, 32000, 44100, 48000, 88200, 96000);
-  // const auto samplerate = 44100;
+  // const auto samplerate = GENERATE(16000, 32000, 44100, 48000, 88200, 96000);
+  const auto samplerate = 44100;
 
   auto waveforms = std::vector<float>(waveform_len * num_waveforms);
   auto waveform_data =

@@ -9,28 +9,28 @@
 
 namespace adwt::maths {
 
-inline constexpr int floor(float fvalue) {
+inline constexpr int floor(float fvalue) noexcept {
   const int ivalue = static_cast<int>(fvalue);
   return fvalue >= static_cast<float>(ivalue) ? ivalue : ivalue - 1;
 }
 
-inline constexpr int ceil(float fvalue) {
+inline constexpr int ceil(float fvalue) noexcept {
   const int ivalue = static_cast<int>(fvalue);
   return fvalue > static_cast<float>(ivalue) ? ivalue + 1 : ivalue;
 }
 
-inline constexpr bool isOdd(int value) {
+inline constexpr bool isOdd(int value) noexcept {
   return (value % 2) == 1;
 }
 
-inline int sign(float value) {
+inline int sign(float value) noexcept {
   if (value == 0.F)
     return 0;
   return std::signbit(value) ? -1 : 1;
 }
 
 template <typename T>
-inline constexpr T reduce(T value, T threshold) {
+inline constexpr T reduce(T value, T threshold) noexcept {
   static_assert(std::is_arithmetic_v<T>);
   assert(threshold > 0);
   assert(value <= 2 * threshold && value >= -threshold);
