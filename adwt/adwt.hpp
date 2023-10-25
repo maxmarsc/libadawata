@@ -18,20 +18,42 @@
 #include <cppitertools/zip.hpp>
 #include <xsimd/xsimd.hpp>
 
+namespace xs = xsimd;
+
 namespace adwt {
 
 template <FilterType Ftype>
 class Oscillator {
-  static constexpr auto kNumCoeffs = numCoeffs<Ftype>();
+  static constexpr std::size_t computeUpperNumCoeffs() {
+    constexpr auto kNumCoeffs = numCoeffs<Ftype>();
+    constexpr auto kBatchSize = xs::batch<std::complex<float>>::size;
+    static_assert(kBatchSize != 0);
+    constexpr auto kNumBatch = maths::floor(static_cast<float>(kNumCoeffs) /
+                                            static_cast<float>(kBatchSize));
+    if constexpr (kNumBatch == 0) {
+      return kBatchSize;
+    } else {
+      if (kNumCoeffs % kNumBatch == 0) {
+        return kNumBatch * kBatchSize;
+      }
+      return (kNumBatch + 1) * kBatchSize;
+    }
+    // return kBatchSize * maths::floor(kNumCoeffs / kBatchSize);
+  }
+
+  static constexpr auto kNumCoeffs      = numCoeffs<Ftype>();
+  static constexpr auto kUpperNumCoeffs = computeUpperNumCoeffs();
+  static constexpr auto kAligment =
+      xs::batch<std::complex<float>>::arch_type::alignment();
 
  public:
   //============================================================================
   Oscillator()
       : waveform_data_(nullptr),
-        r_array_(r<Ftype>()),
-        z_array_(z<Ftype>()),
-        z_pow2_array_(zPow2<Ftype>()),
-        exp_z_array_(zExp<Ftype>()) {}
+        r_array_(rArray()),
+        z_array_(zArray()),
+        z_pow2_array_(zPow2Array()),
+        exp_z_array_(expZArray()) {}
 
   //============================================================================
   [[nodiscard]] int init(
@@ -127,12 +149,58 @@ class Oscillator {
     // for (auto&& [i_0, z, exp_z] : iter::zip(i_array, z_array_, exp_z_array_)) {
     //   i_0 = exp_z * (part_a + z * part_b) - part_c - z * part_d;
     // }
-    //NOLINTNEXTLINE
-#pragma GCC ivdep
-    for (std::size_t i = 0; i < kNumCoeffs; ++i) {
-      aligned_array[i] = exp_z_array_[i] * (part_a + z_array_[i] * part_b) -
-                         part_c - z_array_[i] * part_d;
+    using CpxBatch              = xs::batch<std::complex<float>>;
+    constexpr auto kBatchSize   = CpxBatch::size;
+    constexpr auto kPartialSize = kNumCoeffs % kBatchSize;
+    constexpr auto kWholeSize   = kNumCoeffs - kPartialSize;
+
+    const auto a_batch = CpxBatch::broadcast(part_a);
+    const auto b_batch = CpxBatch::broadcast(part_b);
+    const auto c_batch = CpxBatch::broadcast(part_c);
+    const auto d_batch = CpxBatch::broadcast(part_d);
+
+    if constexpr (kWholeSize != 0) {
+      for (auto i : iter::range<std::size_t>(0, kWholeSize, kBatchSize)) {
+        const auto exp_z_batch = xs::load_aligned(&exp_z_array_[i]);
+        const auto z_batch     = xs::load_aligned(&z_array_[i]);
+        // (part_a + z * part_b)
+        CpxBatch tmp_0 = xs::fma(z_batch, b_batch, a_batch);
+        // exp_z * (part_a + z * part_b) - part_c
+        CpxBatch tmp_1 = xs::fms(exp_z_batch, tmp_0, c_batch);
+        // exp_z * (part_a + z * part_b) - part_c - z * part_d;
+        CpxBatch dst_batch = xs::fnma(z_batch, d_batch, tmp_1);
+        dst_batch.store_aligned(&aligned_array[i]);
+      }
     }
+
+    if constexpr (kPartialSize > 1) {
+      alignas(kAligment) std::array<std::complex<float>, kUpperNumCoeffs>
+          tmp_dst;
+
+      const auto exp_z_batch = xs::load_aligned(&exp_z_array_[kWholeSize]);
+      const auto z_batch     = xs::load_aligned(&z_array_[kWholeSize]);
+      // (part_a + z * part_b)
+      CpxBatch tmp_0 = xs::fma(z_batch, b_batch, a_batch);
+      // exp_z * (part_a + z * part_b) - part_c
+      CpxBatch tmp_1 = xs::fms(exp_z_batch, tmp_0, c_batch);
+      // exp_z * (part_a + z * part_b) - part_c - z * part_d;
+      CpxBatch dst_batch = xs::fnma(z_batch, d_batch, tmp_1);
+      dst_batch.store_aligned(tmp_dst.data());
+      std::memcpy(&aligned_array[kWholeSize], tmp_dst.data(),
+                  kPartialSize * sizeof(std::complex<float>));
+    } else {
+      for (std::size_t i = kWholeSize; i < kNumCoeffs; ++i) {
+        aligned_array[i] = exp_z_array_[i] * (part_a + z_array_[i] * part_b) -
+                           part_c - z_array_[i] * part_d;
+      }
+    }
+
+    //NOLINTNEXTLINE
+    // #pragma GCC ivdep
+    // for (std::size_t i = 0; i < kNumCoeffs; ++i) {
+    //   aligned_array[i] = exp_z_array_[i] * (part_a + z_array_[i] * part_b) -
+    //                      part_c - z_array_[i] * part_d;
+    // }
   }
 
   inline void computeISumFwd(
@@ -480,12 +548,61 @@ class Oscillator {
     prev_phase_diff_  = phase_diff;
     prev_mipmap_idx_  = mipmap_idx;
   }
+  //============================================================================
+  static constexpr std::array<std::complex<float>, kUpperNumCoeffs> rArray() {
+    std::array<std::complex<float>, kUpperNumCoeffs> ret{};
+    constexpr auto kRArray = r<Ftype>();
 
+    for (std::size_t i = 0; i < kNumCoeffs; ++i) {
+      ret[i] = kRArray[i];
+    }
+
+    return ret;
+  }
+
+  static constexpr std::array<std::complex<float>, kUpperNumCoeffs> zArray() {
+    std::array<std::complex<float>, kUpperNumCoeffs> ret{};
+    constexpr auto kZArray = z<Ftype>();
+
+    for (std::size_t i = 0; i < kNumCoeffs; ++i) {
+      ret[i] = kZArray[i];
+    }
+
+    return ret;
+  }
+
+  static std::array<std::complex<float>, kUpperNumCoeffs> zPow2Array() {
+    std::array<std::complex<float>, kUpperNumCoeffs> ret{};
+    auto z_pow_2_array = zPow2<Ftype>();
+
+    for (std::size_t i = 0; i < kNumCoeffs; ++i) {
+      ret[i] = z_pow_2_array[i];
+    }
+
+    return ret;
+  }
+
+  static std::array<std::complex<float>, kUpperNumCoeffs> expZArray() {
+    std::array<std::complex<float>, kUpperNumCoeffs> ret{};
+    auto exp_z_array = zExp<Ftype>();
+
+    for (std::size_t i = 0; i < kNumCoeffs; ++i) {
+      ret[i] = exp_z_array[i];
+    }
+
+    return ret;
+  }
+
+  //============================================================================
   std::unique_ptr<WaveformData> waveform_data_;
-  const std::array<std::complex<float>, kNumCoeffs> r_array_;
-  const std::array<std::complex<float>, kNumCoeffs> z_array_;
-  const std::array<std::complex<float>, kNumCoeffs> z_pow2_array_;
-  const std::array<std::complex<float>, kNumCoeffs> exp_z_array_;
+  alignas(kAligment)
+      const std::array<std::complex<float>, kUpperNumCoeffs> r_array_;
+  alignas(kAligment)
+      const std::array<std::complex<float>, kUpperNumCoeffs> z_array_;
+  alignas(kAligment)
+      const std::array<std::complex<float>, kUpperNumCoeffs> z_pow2_array_;
+  alignas(kAligment)
+      const std::array<std::complex<float>, kUpperNumCoeffs> exp_z_array_;
   std::array<std::complex<float>, kNumCoeffs> prev_cpx_y_array_{};
   float prev_phase_{};
   float prev_phase_red_{};
