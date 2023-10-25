@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <iostream>
 #include <memory>
 #include <numeric>
 #include <span>
@@ -145,20 +146,19 @@ class Oscillator {
     const auto part_d =
         m_span[idx_next_bound] * phase_red_bar + q_span[idx_next_bound];
 
-    // Compute the array of I_0
-    // for (auto&& [i_0, z, exp_z] : iter::zip(i_array, z_array_, exp_z_array_)) {
-    //   i_0 = exp_z * (part_a + z * part_b) - part_c - z * part_d;
-    // }
+    // Compute how much we can use SIMD
     using CpxBatch              = xs::batch<std::complex<float>>;
     constexpr auto kBatchSize   = CpxBatch::size;
     constexpr auto kPartialSize = kNumCoeffs % kBatchSize;
     constexpr auto kWholeSize   = kNumCoeffs - kPartialSize;
 
+    // Broadcast precomputed float part into complex SIMD batchs
     const auto a_batch = CpxBatch::broadcast(part_a);
     const auto b_batch = CpxBatch::broadcast(part_b);
     const auto c_batch = CpxBatch::broadcast(part_c);
     const auto d_batch = CpxBatch::broadcast(part_d);
 
+    // compute the parts that fill whole SIMD batchs
     if constexpr (kWholeSize != 0) {
       for (auto i : iter::range<std::size_t>(0, kWholeSize, kBatchSize)) {
         const auto exp_z_batch = xs::load_aligned(&exp_z_array_[i]);
@@ -173,6 +173,7 @@ class Oscillator {
       }
     }
 
+    // compute the parts that fill only parts of a SIMD batchs
     if constexpr (kPartialSize > 1) {
       alignas(kAligment) std::array<std::complex<float>, kUpperNumCoeffs>
           tmp_dst;
@@ -216,6 +217,12 @@ class Oscillator {
     auto qdiff_span = waveform_data_->qDiff(crt_waveform_, mipmap_idx);
     auto phase_span = waveform_data_->phases(mipmap_idx);
 
+    // Compute how much we can use SIMD
+    using CpxBatch              = xs::batch<std::complex<float>>;
+    constexpr auto kBatchSize   = CpxBatch::size;
+    constexpr auto kPartialSize = kNumCoeffs % kBatchSize;
+    constexpr auto kWholeSize   = kNumCoeffs - kPartialSize;
+
     // Compute the array of I_sum
     for (auto i : iter::range(jmin_red, born_sup)) {
       const auto i_red = maths::reduce(i, waveform_len);
@@ -224,11 +231,72 @@ class Oscillator {
 
       const auto part_a = (phase_red_bar - phase_span[i_red + 1]) / phase_diff;
 
-      for (auto&& [i_sum, z] : iter::zip(aligned_array, z_array_)) {
-        i_sum += std::exp(z * part_a) *
-                 (z * qdiff_span[i_red] +
-                  mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]));
+      // Broadcast precomputed float part into complex SIMD batch
+      const auto a_batch          = CpxBatch::broadcast(part_a);
+      const auto phase_diff_batch = CpxBatch::broadcast(phase_diff);
+      const auto phase_batch      = CpxBatch::broadcast(phase_span[i_red + 1]);
+      const auto m_diff_batch     = CpxBatch::broadcast(mdiff_span[i_red]);
+      const auto q_diff_batch     = CpxBatch::broadcast(qdiff_span[i_red]);
+
+      if constexpr (kWholeSize != 0) {
+        for (auto order : iter::range<std::size_t>(0, kWholeSize, kBatchSize)) {
+          const auto z_batch     = xs::load_aligned(&z_array_[order]);
+          const auto i_sum_batch = xs::load_aligned(&aligned_array[order]);
+
+          // (phase_diff + z * phase_span[i_red + 1])
+          CpxBatch tmp_0 = xs::fma(z_batch, phase_batch, phase_diff_batch);
+          // mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]))
+          CpxBatch tmp_1 = tmp_0 * m_diff_batch;
+          // (z * qdiff_span[i_red] +
+          //  mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]))
+          CpxBatch tmp_2 = xs::fma(z_batch, q_diff_batch, tmp_1);
+          // std::exp(z * part_a)
+          CpxBatch tmp_3 = xs::exp(z_batch * a_batch);
+
+          // i_sum + std::exp(z * part_a) * tmp2
+          CpxBatch dst = xs::fma(tmp_3, tmp_2, i_sum_batch);
+          dst.store_aligned(&aligned_array[order]);
+        }
       }
+
+      // compute the parts that fill only parts of a SIMD batchs
+      if constexpr (kPartialSize > 1) {
+        alignas(kAligment) std::array<std::complex<float>, kUpperNumCoeffs>
+            tmp_dst;
+
+        const auto z_batch     = xs::load_aligned(&z_array_[kWholeSize]);
+        const auto i_sum_batch = xs::load_aligned(&aligned_array[kWholeSize]);
+
+        // (phase_diff + z * phase_span[i_red + 1])
+        CpxBatch tmp_0 = xs::fma(z_batch, phase_batch, phase_diff_batch);
+        // mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]))
+        CpxBatch tmp_1 = tmp_0 * m_diff_batch;
+        // (z * qdiff_span[i_red] +
+        //  mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]))
+        CpxBatch tmp_2 = xs::fma(z_batch, q_diff_batch, tmp_1);
+        // std::exp(z * part_a)
+        CpxBatch tmp_3 = xs::exp(z_batch * a_batch);
+
+        // i_sum + std::exp(z * part_a) * tmp2
+        CpxBatch dst = xs::fma(tmp_3, tmp_2, i_sum_batch);
+        dst.store_aligned(tmp_dst.data());
+        std::memcpy(&aligned_array[kWholeSize], tmp_dst.data(),
+                    kPartialSize * sizeof(std::complex<float>));
+      } else {
+        for (std::size_t order = kWholeSize; order < kNumCoeffs; ++order) {
+          aligned_array[order] +=
+              std::exp(z_array_[order] * part_a) *
+              (z_array_[order] * qdiff_span[i_red] +
+               mdiff_span[i_red] *
+                   (phase_diff + z_array_[order] * phase_span[i_red + 1]));
+        }
+      }
+
+      // for (auto&& [i_sum, z] : iter::zip(aligned_array, z_array_)) {
+      //   i_sum += std::exp(z * part_a) *
+      //            (z * qdiff_span[i_red] +
+      //             mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]));
+      // }
     }
   }
 
@@ -309,7 +377,7 @@ class Oscillator {
     const auto phase_red_bar = phase_red + static_cast<float>(phase_red == 0.F);
 
     // Creates the aligned array for I_0 and I_sum computation
-    alignas(alignof(std::complex<float>)) auto i_array =
+    alignas(kAligment) auto i_array =
         std::array<std::complex<float>, kNumCoeffs>();
 
     // Compute I_0
@@ -331,7 +399,7 @@ class Oscillator {
         prev_phase_red_ + static_cast<int>(prev_phase_red_ == 0.F);
 
     // Compute the array of I_0
-    alignas(alignof(std::complex<float>)) auto i_array =
+    alignas(kAligment) auto i_array =
         std::array<std::complex<float>, kNumCoeffs>();
 
     computeI0(i_array, mipmap_idx, jmin_red, jmax_p_red, phase_diff,
