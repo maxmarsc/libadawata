@@ -35,6 +35,10 @@
 #define __ARM_NEON_H
 #define _AARCH64_NEON_H_
 
+#ifndef __CLANGD__
+#error "This file should only be included with clangd
+#endif
+
 #ifndef __ARM_FP
 #error \
     "NEON intrinsics not available with the soft-float ABI. Please use -mfloat-abi=softfp or -mfloat-abi=hard"

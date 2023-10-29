@@ -30,9 +30,18 @@ namespace adwt {
 
 template <FilterType Ftype>
 class Oscillator {
+  using CpxBatch = xs::batch<std::complex<float>>;
+
+  /**
+   * @brief If the number of complex values to compute modulo the size of a SIMD
+   * complex batch is above this threshold, we will use a SIMD batch to compute
+   * these complex values. If less or equal, we will use a scalar implementation.
+   */
+  static constexpr auto kBatchThreshold = 1;
+
   static constexpr std::size_t computeUpperNumCoeffs() {
     constexpr auto kNumCoeffs = numCoeffs<Ftype>();
-    constexpr auto kBatchSize = xs::batch<std::complex<float>>::size;
+    constexpr auto kBatchSize = CpxBatch::size;
     static_assert(kBatchSize != 0);
     constexpr auto kNumBatch = maths::floor(static_cast<float>(kNumCoeffs) /
                                             static_cast<float>(kBatchSize));
@@ -602,8 +611,8 @@ class Oscillator {
     const auto jmax_p_red = maths::reduce(jmax, waveform_len);
 
     // Compute the I complex sum
-    auto i_cpx_array = computeBiI(mipmap_idx, jmin, jmin_red, jmax_p_red,
-                                  phase_diff, phase_red);
+    auto i_cpx_array = computeBwdI(mipmap_idx, jmin, jmin_red, jmax_p_red,
+                                   phase_diff, phase_red);
 
     if (mipmap_weight_up != 0.F) {
       // Needs to crossfade with upper mipmap entry
@@ -611,8 +620,8 @@ class Oscillator {
       const auto jmax_p_red_up = jmax_p_red / 2;
 
       // Compute the upper mipmap I complex sum
-      auto i_cpx_array_up = computeBiI(mipmap_idx_up, jmin, jmin_red_up,
-                                       jmax_p_red_up, phase_diff, phase_red);
+      auto i_cpx_array_up = computeBwdI(mipmap_idx_up, jmin, jmin_red_up,
+                                        jmax_p_red_up, phase_diff, phase_red);
 
       // Crossfade
       for (auto&& [i_cpx, i_cpx_up] : iter::zip(i_cpx_array, i_cpx_array_up)) {
