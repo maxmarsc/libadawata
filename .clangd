@@ -8,3 +8,7 @@ Diagnostics:
     - "unknown_typename_suggest"
     - "note_previous_decl"
     - "fatal_too_many_errors"
+
+---
+CompileFlags:
+  Add: [-D__CLANGD__]

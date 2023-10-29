@@ -5,6 +5,10 @@
 
 #pragma once
 
+#if defined(__CLANGD__) && defined(__aarch64__)
+#include "extras/clangd_arm_neon.h"
+#endif
+
 #include <iostream>
 #include <memory>
 #include <numeric>
@@ -195,11 +199,6 @@ class Oscillator {
       // volatile std::array<std::complex<float>, kUpperNumCoeffs> _ = tmp_dst;
       std::memcpy(&aligned_array[kWholeSize], tmp_dst.data(),
                   kPartialSize * sizeof(std::complex<float>));
-      // std::copy(tmp_dst.data(), tmp_dst.data() + kPartialSize,
-      //           &aligned_array[kWholeSize]);
-      // for (auto i = 0; i < kPartialSize; ++i) {
-      //   aligned_array[kWholeSize + i] = tmp_dst[i];
-      // }
     } else {
       // std::cout << "computeIO partial standard" << std::endl;
       for (std::size_t i = kWholeSize; i < kNumCoeffs; ++i) {
@@ -646,10 +645,7 @@ class Oscillator {
     std::array<std::complex<float>, kUpperNumCoeffs> ret{};
     constexpr auto kRArray = r<Ftype>();
 
-    for (std::size_t i = 0; i < kNumCoeffs; ++i) {
-      ret[i] = kRArray[i];
-    }
-
+    std::copy(kRArray.begin(), kRArray.end(), ret.begin());
     return ret;
   }
 
@@ -657,10 +653,7 @@ class Oscillator {
     std::array<std::complex<float>, kUpperNumCoeffs> ret{};
     constexpr auto kZArray = z<Ftype>();
 
-    for (std::size_t i = 0; i < kNumCoeffs; ++i) {
-      ret[i] = kZArray[i];
-    }
-
+    std::copy(kZArray.begin(), kZArray.end(), ret.begin());
     return ret;
   }
 
@@ -668,10 +661,7 @@ class Oscillator {
     std::array<std::complex<float>, kUpperNumCoeffs> ret{};
     auto z_pow_2_array = zPow2<Ftype>();
 
-    for (std::size_t i = 0; i < kNumCoeffs; ++i) {
-      ret[i] = z_pow_2_array[i];
-    }
-
+    std::copy(z_pow_2_array.begin(), z_pow_2_array.end(), ret.begin());
     return ret;
   }
 
@@ -679,10 +669,7 @@ class Oscillator {
     std::array<std::complex<float>, kUpperNumCoeffs> ret{};
     auto exp_z_array = zExp<Ftype>();
 
-    for (std::size_t i = 0; i < kNumCoeffs; ++i) {
-      ret[i] = exp_z_array[i];
-    }
-
+    std::copy(exp_z_array.begin(), exp_z_array.end(), ret.begin());
     return ret;
   }
 
