@@ -35,7 +35,7 @@ class Oscillator {
     if constexpr (kNumBatch == 0) {
       return kBatchSize;
     } else {
-      if (kNumCoeffs % kNumBatch == 0) {
+      if (kNumCoeffs % kBatchSize == 0) {
         return kNumBatch * kBatchSize;
       }
       return (kNumBatch + 1) * kBatchSize;
