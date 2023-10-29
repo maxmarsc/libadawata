@@ -25,8 +25,8 @@
  * @file This is a dump of a LLVM version of arm_neon.h. This is used to prevent
  * clangd to parse GCC version of arm_neon.h.
  * 
- * The header gard has been modified from __ARM_NEON_H (llvm) to _AARCH64_NEON_H_ (GNU)
- * to prevent the include of GNU's arm_neon.h content.
+ * The header gard has been modified to define the _AARCH64_NEON_H_ (GNU) preprocessor
+ * definition to prevent the include of GNU's arm_neon.h content.
  * 
  * @note THIS CODE SHOULD NOT BE USED IN ANY WAY, IT IS ONLY A TRICK FOR THE IDE
  */
