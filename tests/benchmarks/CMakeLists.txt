@@ -67,6 +67,41 @@ target_link_libraries(
 
 add_dependencies(adwt_benchmark benchmark_project libsndfile_project)
 
+add_executable(
+  adwt_profiler
+  ${CMAKE_CURRENT_SOURCE_DIR}/adwt_profile.cpp
+)
+
+target_include_directories(
+  adwt_profiler
+  PRIVATE ${PROJECT_SOURCE_DIR} ${SNDFILE_INSTALL_DIR}/include
+)
+
+set_target_properties(
+  adwt_profiler
+  PROPERTIES CXX_STANDARD 20
+)
+
+target_compile_options(
+  adwt_profiler
+  PRIVATE -Wall -Wextra
+)
+
+target_compile_definitions(
+  adwt_profiler
+  PRIVATE ASSETS_DIR="${ASSETS_DIR}"
+)
+
+target_link_directories(
+  adwt_profiler PRIVATE ${SNDFILE_INSTALL_DIR}/lib
+)
+
+target_link_libraries(
+  adwt_profiler utils_benchmarks adawata sndfile
+)
+
+add_dependencies(adwt_benchmark benchmark_project libsndfile_project)
+
 add_subdirectory(source)
 
 # ##############################################################################

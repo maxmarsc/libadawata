@@ -26,6 +26,14 @@ message(STATUS "CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE}")
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 # ##############################################################################
+# Tracy
+# ##############################################################################
+if(USE_TRACY)
+  add_compile_definitions(TRACY_ENABLE)
+  add_compile_definitions(TRACY_NO_EXIT)
+endif()
+
+# ##############################################################################
 # Sources
 # ##############################################################################
 add_subdirectory(cmake)

@@ -17,6 +17,7 @@
 #include "cppitertools/range.hpp"
 
 #include <cppitertools/zip.hpp>
+#include <tracy/Tracy.hpp>
 #include <xsimd/xsimd.hpp>
 
 namespace xs = xsimd;
@@ -113,6 +114,7 @@ class Oscillator {
  private:
   //============================================================================
   void resetInternals(float init_phase, float init_phase_diff) {
+    ZoneScoped;
     assert(waveform_data_ != nullptr);
     prev_cpx_y_array_ = std::array<std::complex<float>, kNumCoeffs>{};
     prev_phase_       = init_phase;
@@ -134,6 +136,7 @@ class Oscillator {
       std::array<std::complex<float>, kNumCoeffs>& aligned_array,
       int mipmap_idx, int idx_prev_bound, int idx_next_bound, float phase_diff,
       float prev_phase_red_bar, float phase_red_bar) const noexcept {
+    ZoneScoped;
     // Get the span of m & q
     auto m_span = waveform_data_->m(crt_waveform_, mipmap_idx);
     auto q_span = waveform_data_->q(crt_waveform_, mipmap_idx);
@@ -161,6 +164,7 @@ class Oscillator {
     // compute the parts that fill whole SIMD batchs
     if constexpr (kWholeSize != 0) {
       for (auto i : iter::range<std::size_t>(0, kWholeSize, kBatchSize)) {
+        // std::cout << "computeIO whole SIMD" << std::endl;
         const auto exp_z_batch = xs::load_aligned(&exp_z_array_[i]);
         const auto z_batch     = xs::load_aligned(&z_array_[i]);
         // (part_a + z * part_b)
@@ -175,6 +179,7 @@ class Oscillator {
 
     // compute the parts that fill only parts of a SIMD batchs
     if constexpr (kPartialSize > 1) {
+      // std::cout << "computeIO partial SIMD" << std::endl;
       alignas(kAligment) std::array<std::complex<float>, kUpperNumCoeffs>
           tmp_dst;
 
@@ -187,9 +192,16 @@ class Oscillator {
       // exp_z * (part_a + z * part_b) - part_c - z * part_d;
       CpxBatch dst_batch = xs::fnma(z_batch, d_batch, tmp_1);
       dst_batch.store_aligned(tmp_dst.data());
+      // volatile std::array<std::complex<float>, kUpperNumCoeffs> _ = tmp_dst;
       std::memcpy(&aligned_array[kWholeSize], tmp_dst.data(),
                   kPartialSize * sizeof(std::complex<float>));
+      // std::copy(tmp_dst.data(), tmp_dst.data() + kPartialSize,
+      //           &aligned_array[kWholeSize]);
+      // for (auto i = 0; i < kPartialSize; ++i) {
+      //   aligned_array[kWholeSize + i] = tmp_dst[i];
+      // }
     } else {
+      // std::cout << "computeIO partial standard" << std::endl;
       for (std::size_t i = kWholeSize; i < kNumCoeffs; ++i) {
         aligned_array[i] = exp_z_array_[i] * (part_a + z_array_[i] * part_b) -
                            part_c - z_array_[i] * part_d;
@@ -208,6 +220,7 @@ class Oscillator {
       std::array<std::complex<float>, kNumCoeffs>& aligned_array,
       int mipmap_idx, int jmin_red, int jmax_p_red, float phase_diff,
       float phase_red) const noexcept {
+    ZoneScoped;
     const auto waveform_len = waveform_data_->waveformLen(mipmap_idx);
     const auto born_sup =
         jmax_p_red + waveform_len * static_cast<int>(jmin_red > jmax_p_red);
@@ -240,6 +253,7 @@ class Oscillator {
 
       if constexpr (kWholeSize != 0) {
         for (auto order : iter::range<std::size_t>(0, kWholeSize, kBatchSize)) {
+          // std::cout << "computeI_SumFwd whole SIMD" << std::endl;
           const auto z_batch     = xs::load_aligned(&z_array_[order]);
           const auto i_sum_batch = xs::load_aligned(&aligned_array[order]);
 
@@ -261,6 +275,7 @@ class Oscillator {
 
       // compute the parts that fill only parts of a SIMD batchs
       if constexpr (kPartialSize > 1) {
+        // std::cout << "computeI_SumFwd partial SIMD" << std::endl;
         alignas(kAligment) std::array<std::complex<float>, kUpperNumCoeffs>
             tmp_dst;
 
@@ -280,9 +295,11 @@ class Oscillator {
         // i_sum + std::exp(z * part_a) * tmp2
         CpxBatch dst = xs::fma(tmp_3, tmp_2, i_sum_batch);
         dst.store_aligned(tmp_dst.data());
+        // volatile std::array<std::complex<float>, kUpperNumCoeffs> _ = tmp_dst;
         std::memcpy(&aligned_array[kWholeSize], tmp_dst.data(),
                     kPartialSize * sizeof(std::complex<float>));
       } else {
+        // std::cout << "computeI_SumFwd partial standard" << std::endl;
         for (std::size_t order = kWholeSize; order < kNumCoeffs; ++order) {
           aligned_array[order] +=
               std::exp(z_array_[order] * part_a) *
@@ -304,6 +321,7 @@ class Oscillator {
       std::array<std::complex<float>, kNumCoeffs>& aligned_array,
       int mipmap_idx, int jmin, int jmin_red, int jmax_p_red, float phase_diff,
       float phase_red) const noexcept {
+    ZoneScoped;
     assert(phase_diff < 0);
     const auto waveform_len = waveform_data_->waveformLen(mipmap_idx);
     const auto born_sup =
@@ -338,6 +356,7 @@ class Oscillator {
   std::array<std::complex<float>, kNumCoeffs> computeBiI(
       int mipmap_idx, int jmin, int jmin_red, int jmax_p_red, float phase_diff,
       float phase_red) const noexcept {
+    ZoneScoped;
     assert(waveform_data_ != nullptr);
     const auto forward = phase_diff > 0;
     const auto prev_phase_red_bar =
@@ -371,6 +390,7 @@ class Oscillator {
   std::array<std::complex<float>, kNumCoeffs> computeBwdI(
       int mipmap_idx, int jmin, int jmin_red, int jmax_p_red, float phase_diff,
       float phase_red) const noexcept {
+    ZoneScoped;
     assert(waveform_data_ != nullptr);
     assert(phase_diff < 0);
     const auto prev_phase_red_bar = prev_phase_red_;
@@ -394,6 +414,7 @@ class Oscillator {
   std::array<std::complex<float>, kNumCoeffs> computeFwdI(
       int mipmap_idx, int jmin_red, int jmax_p_red, float phase_diff,
       float phase_red) const noexcept {
+    ZoneScoped;
     assert(waveform_data_ != nullptr);
     const auto prev_phase_red_bar =
         prev_phase_red_ + static_cast<int>(prev_phase_red_ == 0.F);
@@ -412,6 +433,7 @@ class Oscillator {
   }
 
   void processFwd(std::span<const float> phases, std::span<float> output) {
+    ZoneScoped;
     assert(waveform_data_ != nullptr);
     assert(phases.size() == output.size());
     for (auto&& [phase, output] : iter::zip(phases, output)) {
@@ -426,6 +448,7 @@ class Oscillator {
   }
 
   void processBi(std::span<const float> phases, std::span<float> output) {
+    ZoneScoped;
     assert(waveform_data_ != nullptr);
     assert(phases.size() == output.size());
     for (auto&& [phase, output] : iter::zip(phases, output)) {
@@ -447,6 +470,7 @@ class Oscillator {
 
   inline void processSampleFwd(float phase, float phase_diff,
                                float& output) noexcept {
+    ZoneScoped;
     assert(phase_diff > 0 && phase_diff <= 0.5);
 
     // Compute mipmap_idx
@@ -527,6 +551,7 @@ class Oscillator {
 
   inline void processSampleBwd(float phase, float phase_diff,
                                float& output) noexcept {
+    ZoneScoped;
     assert(phase_diff < 0 && phase_diff >= -0.5);
 
     // Compute mipmap_idx

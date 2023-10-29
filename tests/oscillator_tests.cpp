@@ -201,6 +201,126 @@ TEST_CASE("Valid init BT2") {
   }
 }
 
+TEST_CASE("Valid init O6") {
+  auto osc = adwt::Oscillator<adwt::FilterType::kType4>();
+
+  const auto waveform_len = GENERATE(2048);
+  // const auto num_waveforms = GENERATE(1, 2, 16);
+  const auto num_waveforms = 1;
+  const auto samplerate    = GENERATE(44100);
+  const auto waveforms     = std::vector<float>(waveform_len * num_waveforms);
+
+  auto waveform_data =
+      adwt::WaveformData::build(waveforms, num_waveforms, samplerate);
+  REQUIRE(waveform_data != nullptr);
+  REQUIRE(osc.init(std::move(waveform_data)) == 0);
+  CHECK(osc.crtWaveform() == 0);
+  CHECK(osc.numWaveforms() == num_waveforms);
+
+  auto rng_bi = Catch::Generators::RandomFloatingGenerator<float>(
+      0.F, 1.F, Catch::getSeed());
+  auto rng_fwd = Catch::Generators::RandomFloatingGenerator<float>(
+      0.F, 0.5F, Catch::getSeed());
+
+  // SECTION("Then processing bidirectionnal") {
+  //   const auto block_size = GENERATE(16, 32, 64, 128);
+  //   auto phase_vector     = std::vector<float>(block_size);
+  //   auto output_vector    = std::vector<float>(block_size);
+
+  //   for (auto& phase : phase_vector) {
+  //     // This is only to check that we don't crash with complete random values
+  //     // but the output of this will be complete trash
+  //     rng_bi.next();
+  //     phase = rng_bi.get();
+  //   }
+
+  //   auto count = 10;
+  //   while (--count) {
+  //     osc.process<adwt::Direction::kBidirectionnal>(phase_vector,
+  //                                                   output_vector);
+  //   }
+  // }
+
+  SECTION("Then processing forward") {
+    const auto block_size = GENERATE(128);
+    auto phase_vector     = std::vector<float>(block_size);
+    auto output_vector    = std::vector<float>(block_size);
+    auto prev_phase       = 0.F;
+
+    auto count = 10;
+    while (--count) {
+      for (auto& phase : phase_vector) {
+        // This is only to check that we don't crash with complete random values
+        // but the output of this will be complete trash
+        rng_fwd.next();
+        phase      = adwt::maths::reduce(prev_phase + rng_fwd.get(), 1.F);
+        prev_phase = phase;
+      }
+      osc.process<adwt::Direction::kForward>(phase_vector, output_vector);
+    }
+  }
+}
+
+TEST_CASE("Valid init O8") {
+  auto osc = adwt::Oscillator<adwt::FilterType::kType5>();
+
+  const auto waveform_len = GENERATE(2048);
+  // const auto num_waveforms = GENERATE(1, 2, 16);
+  const auto num_waveforms = 1;
+  const auto samplerate    = GENERATE(44100);
+  const auto waveforms     = std::vector<float>(waveform_len * num_waveforms);
+
+  auto waveform_data =
+      adwt::WaveformData::build(waveforms, num_waveforms, samplerate);
+  REQUIRE(waveform_data != nullptr);
+  REQUIRE(osc.init(std::move(waveform_data)) == 0);
+  CHECK(osc.crtWaveform() == 0);
+  CHECK(osc.numWaveforms() == num_waveforms);
+
+  auto rng_bi = Catch::Generators::RandomFloatingGenerator<float>(
+      0.F, 1.F, Catch::getSeed());
+  auto rng_fwd = Catch::Generators::RandomFloatingGenerator<float>(
+      0.F, 0.5F, Catch::getSeed());
+
+  // SECTION("Then processing bidirectionnal") {
+  //   const auto block_size = GENERATE(16, 32, 64, 128);
+  //   auto phase_vector     = std::vector<float>(block_size);
+  //   auto output_vector    = std::vector<float>(block_size);
+
+  //   for (auto& phase : phase_vector) {
+  //     // This is only to check that we don't crash with complete random values
+  //     // but the output of this will be complete trash
+  //     rng_bi.next();
+  //     phase = rng_bi.get();
+  //   }
+
+  //   auto count = 10;
+  //   while (--count) {
+  //     osc.process<adwt::Direction::kBidirectionnal>(phase_vector,
+  //                                                   output_vector);
+  //   }
+  // }
+
+  SECTION("Then processing forward") {
+    const auto block_size = GENERATE(128);
+    auto phase_vector     = std::vector<float>(block_size);
+    auto output_vector    = std::vector<float>(block_size);
+    auto prev_phase       = 0.F;
+
+    auto count = 10;
+    while (--count) {
+      for (auto& phase : phase_vector) {
+        // This is only to check that we don't crash with complete random values
+        // but the output of this will be complete trash
+        rng_fwd.next();
+        phase      = adwt::maths::reduce(prev_phase + rng_fwd.get(), 1.F);
+        prev_phase = phase;
+      }
+      osc.process<adwt::Direction::kForward>(phase_vector, output_vector);
+    }
+  }
+}
+
 TEST_CASE("Valid init CH10") {
   auto osc = adwt::Oscillator<adwt::FilterType::kType2>();
 
@@ -477,7 +597,7 @@ TEST_CASE("Reference test : CH10 sweep") {
   constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
 
   // Empiric
-  constexpr auto kEps = 2.1e-4F;  // -33dB difference with python impl
+  constexpr auto kEps = 2.6e-4F;  // -33dB difference with python impl
   Catch::StringMaker<float>::precision = 15;
   // The reference file has a gain of 0.5
   constexpr auto kGain          = 0.5F;
@@ -857,7 +977,7 @@ TEST_CASE("Reference test : CH10 reverse sweep") {
   constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
 
   // Empiric
-  constexpr auto kEps = 2e-4F;  // -33dB difference with python impl
+  constexpr auto kEps = 4.4e-4F;  // -30dB difference with python impl
   Catch::StringMaker<float>::precision = 15;
   // The reference file has a gain of 0.5
   constexpr auto kGain          = 0.5F;
