@@ -18,17 +18,6 @@ void bmSweepUpOrder2(benchmark::State& state) {
   const auto num_frames = 2048 * 100;
   const auto num_blocks = num_frames / block_size;
   const auto samplerate = 44100.F;
-  // constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
-
-  // // Load the waveform file
-  // auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
-  // const auto waveform_len = waveform_sndfile.frames();
-  // auto waveform_vec       = std::vector<float>(waveform_len);
-  // auto read = waveform_sndfile.readf(waveform_vec.data(), waveform_len);
-  // if (read != waveform_len || waveform_len != 2048) {
-  //   std::cerr << "Failed to read waveform file" << std::endl;
-  //   std::abort();
-  // }
 
   // Init the waveform data
   auto waveform_data =
@@ -69,17 +58,6 @@ void bmSweepUpOrder4(benchmark::State& state) {
   const auto num_frames = 2048 * 100;
   const auto num_blocks = num_frames / block_size;
   const auto samplerate = 44100.F;
-  // constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
-
-  // // Load the waveform file
-  // auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
-  // const auto waveform_len = waveform_sndfile.frames();
-  // auto waveform_vec       = std::vector<float>(waveform_len);
-  // auto read = waveform_sndfile.readf(waveform_vec.data(), waveform_len);
-  // if (read != waveform_len || waveform_len != 2048) {
-  //   std::cerr << "Failed to read waveform file" << std::endl;
-  //   std::abort();
-  // }
 
   // Init the waveform data
   auto waveform_data =
@@ -116,17 +94,6 @@ void bmSweepUpOrder6(benchmark::State& state) {
   const auto num_frames = 2048 * 100;
   const auto num_blocks = num_frames / block_size;
   const auto samplerate = 44100.F;
-  // constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
-
-  // // Load the waveform file
-  // auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
-  // const auto waveform_len = waveform_sndfile.frames();
-  // auto waveform_vec       = std::vector<float>(waveform_len);
-  // auto read = waveform_sndfile.readf(waveform_vec.data(), waveform_len);
-  // if (read != waveform_len || waveform_len != 2048) {
-  //   std::cerr << "Failed to read waveform file" << std::endl;
-  //   std::abort();
-  // }
 
   // Init the waveform data
   auto waveform_data =
@@ -163,17 +130,6 @@ void bmSweepUpOrder8(benchmark::State& state) {
   const auto num_frames = 2048 * 100;
   const auto num_blocks = num_frames / block_size;
   const auto samplerate = 44100.F;
-  // constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
-
-  // // Load the waveform file
-  // auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
-  // const auto waveform_len = waveform_sndfile.frames();
-  // auto waveform_vec       = std::vector<float>(waveform_len);
-  // auto read = waveform_sndfile.readf(waveform_vec.data(), waveform_len);
-  // if (read != waveform_len || waveform_len != 2048) {
-  //   std::cerr << "Failed to read waveform file" << std::endl;
-  //   std::abort();
-  // }
 
   // Init the waveform data
   auto waveform_data =
@@ -210,17 +166,6 @@ void bmSweepUpOrder10(benchmark::State& state) {
   const auto num_frames = 2048 * 100;
   const auto num_blocks = num_frames / block_size;
   const auto samplerate = 44100.F;
-  // constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
-
-  // // Load the waveform file
-  // auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
-  // const auto waveform_len = waveform_sndfile.frames();
-  // auto waveform_vec       = std::vector<float>(waveform_len);
-  // auto read = waveform_sndfile.readf(waveform_vec.data(), waveform_len);
-  // if (read != waveform_len || waveform_len != 2048) {
-  //   std::cerr << "Failed to read waveform file" << std::endl;
-  //   std::abort();
-  // }
 
   // Init the waveform data
   auto waveform_data =

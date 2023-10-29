@@ -20,18 +20,6 @@ void bmSweep(benchmark::State& state) {
   const auto num_blocks       = num_frames / block_size;
   const auto samplerate       = 44100.F;
   const auto upsampling_ratio = 8;
-  constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
-
-  // // Load the waveform file
-  // auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
-  // const auto waveform_len = waveform_sndfile.frames();
-  // auto waveform_vec =
-  //     std::vector<float>(static_cast<std::size_t>(waveform_len));
-  // auto read = waveform_sndfile.readf(waveform_vec.data(), waveform_len);
-  // if (read != waveform_len || waveform_len != 2048) {
-  //   std::cerr << "Failed to read waveform file" << std::endl;
-  //   std::abort();
-  // }
 
   // Init the oscilator
   using Oscillator = ovs::OvsOscillator<ovs::ResamplingBackend::kJuce>;
@@ -61,19 +49,9 @@ void bmSweep(benchmark::State& state) {
       osc.process(phase_span, output_span);
     }
   }
-
-  // for (auto& val : output_vec) {
-  //   val *= 0.5F;
-  // }
-
-  // if (SndfileHandle("juce_sweep_output.wav", SFM_WRITE,
-  //                   waveform_sndfile.format(), 1, samplerate)
-  //         .writef(output_vec.data(), num_frames) != num_frames)
-  //   std::abort();
 }
 
 //NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 BENCHMARK(bmSweep)->RangeMultiplier(2)->Range(16, 2048);
-// BENCHMARK(bmSweep)->Range(64, 64);
 
 }  // namespace benchmarks
