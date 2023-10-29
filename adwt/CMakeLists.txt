@@ -35,7 +35,8 @@ set_target_properties(
 target_compile_options(
   adawata
   PUBLIC -ffast-math $<$<BOOL:${USE_ASAN}>:-fsanitize=address>
-  # -fopt-info-vec-optimized -fopt-info-vec-missed
+  # -fopt-info-vec-optimized
+  # -fopt-info-vec-missed
 )
 
 target_link_options(

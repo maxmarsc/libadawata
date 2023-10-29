@@ -147,7 +147,7 @@ class Oscillator {
   }
 
   inline void computeI0(
-      std::array<std::complex<float>, kNumCoeffs>& aligned_array,
+      std::array<std::complex<float>, kUpperNumCoeffs>& aligned_array,
       int mipmap_idx, int idx_prev_bound, int idx_next_bound, float phase_diff,
       float prev_phase_red_bar, float phase_red_bar) const noexcept {
     ZoneScoped;
@@ -163,12 +163,6 @@ class Oscillator {
     const auto part_d =
         m_span[idx_next_bound] * phase_red_bar + q_span[idx_next_bound];
 
-    // Compute how much we can use SIMD
-    // using CpxBatch              = xs::batch<std::complex<float>>;
-    // constexpr auto kBatchSize   = CpxBatch::size;
-    // constexpr auto kPartialSize = kNumCoeffs % kBatchSize;
-    // constexpr auto kWholeSize   = kNumCoeffs - kPartialSize;
-
     // Broadcast precomputed float part into complex SIMD batchs
     const auto a_batch = CpxBatch::broadcast(part_a);
     const auto b_batch = CpxBatch::broadcast(part_b);
@@ -178,7 +172,6 @@ class Oscillator {
     // compute the parts that fill whole SIMD batchs
     if constexpr (kWholeSize != 0) {
       for (auto i : iter::range<std::size_t>(0, kWholeSize, kBatchSize)) {
-        // std::cout << "computeIO whole SIMD" << std::endl;
         const auto exp_z_batch = xs::load_aligned(&exp_z_array_[i]);
         const auto z_batch     = xs::load_aligned(&z_array_[i]);
         // (part_a + z * part_b)
@@ -193,10 +186,6 @@ class Oscillator {
 
     // compute the parts that fill only parts of a SIMD batchs
     if constexpr (kPartialSize > kBatchThreshold) {
-      // std::cout << "computeIO partial SIMD" << std::endl;
-      alignas(kAligment) std::array<std::complex<float>, kUpperNumCoeffs>
-          tmp_dst;
-
       const auto exp_z_batch = xs::load_aligned(&exp_z_array_[kWholeSize]);
       const auto z_batch     = xs::load_aligned(&z_array_[kWholeSize]);
       // (part_a + z * part_b)
@@ -205,10 +194,8 @@ class Oscillator {
       CpxBatch tmp_1 = xs::fms(exp_z_batch, tmp_0, c_batch);
       // exp_z * (part_a + z * part_b) - part_c - z * part_d;
       CpxBatch dst_batch = xs::fnma(z_batch, d_batch, tmp_1);
-      dst_batch.store_aligned(tmp_dst.data());
-      // volatile std::array<std::complex<float>, kUpperNumCoeffs> _ = tmp_dst;
-      std::memcpy(&aligned_array[kWholeSize], tmp_dst.data(),
-                  kPartialSize * sizeof(std::complex<float>));
+
+      dst_batch.store_aligned(&aligned_array[kWholeSize]);
     } else {
       // std::cout << "computeIO partial standard" << std::endl;
       for (std::size_t i = kWholeSize; i < kNumCoeffs; ++i) {
@@ -226,7 +213,7 @@ class Oscillator {
   }
 
   inline void computeISumFwd(
-      std::array<std::complex<float>, kNumCoeffs>& aligned_array,
+      std::array<std::complex<float>, kUpperNumCoeffs>& aligned_array,
       int mipmap_idx, int jmin_red, int jmax_p_red, float phase_diff,
       float phase_red) const noexcept {
     ZoneScoped;
@@ -238,12 +225,6 @@ class Oscillator {
     auto mdiff_span = waveform_data_->mDiff(crt_waveform_, mipmap_idx);
     auto qdiff_span = waveform_data_->qDiff(crt_waveform_, mipmap_idx);
     auto phase_span = waveform_data_->phases(mipmap_idx);
-
-    // Compute how much we can use SIMD
-    // using CpxBatch              = xs::batch<std::complex<float>>;
-    // constexpr auto kBatchSize   = CpxBatch::size;
-    // constexpr auto kPartialSize = kNumCoeffs % kBatchSize;
-    // constexpr auto kWholeSize   = kNumCoeffs - kPartialSize;
 
     // Compute the array of I_sum
     for (auto i : iter::range(jmin_red, born_sup)) {
@@ -262,7 +243,6 @@ class Oscillator {
 
       if constexpr (kWholeSize != 0) {
         for (auto order : iter::range<std::size_t>(0, kWholeSize, kBatchSize)) {
-          // std::cout << "computeI_SumFwd whole SIMD" << std::endl;
           const auto z_batch     = xs::load_aligned(&z_array_[order]);
           const auto i_sum_batch = xs::load_aligned(&aligned_array[order]);
 
@@ -284,10 +264,6 @@ class Oscillator {
 
       // compute the parts that fill only parts of a SIMD batchs
       if constexpr (kPartialSize > kBatchThreshold) {
-        // std::cout << "computeI_SumFwd partial SIMD" << std::endl;
-        alignas(kAligment) std::array<std::complex<float>, kUpperNumCoeffs>
-            tmp_dst;
-
         const auto z_batch     = xs::load_aligned(&z_array_[kWholeSize]);
         const auto i_sum_batch = xs::load_aligned(&aligned_array[kWholeSize]);
 
@@ -303,12 +279,8 @@ class Oscillator {
 
         // i_sum + std::exp(z * part_a) * tmp2
         CpxBatch dst = xs::fma(tmp_3, tmp_2, i_sum_batch);
-        dst.store_aligned(tmp_dst.data());
-        // volatile std::array<std::complex<float>, kUpperNumCoeffs> _ = tmp_dst;
-        std::memcpy(&aligned_array[kWholeSize], tmp_dst.data(),
-                    kPartialSize * sizeof(std::complex<float>));
+        dst.store_aligned(&aligned_array[kWholeSize]);
       } else {
-        // std::cout << "computeI_SumFwd partial standard" << std::endl;
         for (std::size_t order = kWholeSize; order < kNumCoeffs; ++order) {
           aligned_array[order] +=
               std::exp(z_array_[order] * part_a) *
@@ -327,7 +299,7 @@ class Oscillator {
   }
 
   inline void computeISumBwd(
-      std::array<std::complex<float>, kNumCoeffs>& aligned_array,
+      std::array<std::complex<float>, kUpperNumCoeffs>& aligned_array,
       int mipmap_idx, int jmin, int jmin_red, int jmax_p_red, float phase_diff,
       float phase_red) const noexcept {
     ZoneScoped;
@@ -379,9 +351,6 @@ class Oscillator {
       }
 
       if constexpr (kPartialSize > kBatchThreshold) {
-        alignas(kAligment) std::array<std::complex<float>, kUpperNumCoeffs>
-            tmp_dst;
-
         const auto z_batch     = xs::load_aligned(&z_array_[kWholeSize]);
         const auto i_sum_batch = xs::load_aligned(&aligned_array[kWholeSize]);
 
@@ -397,9 +366,7 @@ class Oscillator {
 
         // i_sum - std::exp(z * part_a) * tmp2
         CpxBatch dst = xs::fnma(tmp_3, tmp_2, i_sum_batch);
-        dst.store_aligned(tmp_dst.data());
-        std::memcpy(&aligned_array[kWholeSize], tmp_dst.data(),
-                    kPartialSize * sizeof(std::complex<float>));
+        dst.store_aligned(&aligned_array[kWholeSize]);
       } else {
         for (std::size_t order = kWholeSize; order < kNumCoeffs; ++order) {
           aligned_array[order] -=
@@ -456,9 +423,10 @@ class Oscillator {
   //   return i_array;
   // }
 
-  void computeBwdI(std::array<std::complex<float>, kNumCoeffs>& aligned_array,
-                   int mipmap_idx, int jmin, int jmin_red, int jmax_p_red,
-                   float phase_diff, float phase_red) const noexcept {
+  void computeBwdI(
+      std::array<std::complex<float>, kUpperNumCoeffs>& aligned_array,
+      int mipmap_idx, int jmin, int jmin_red, int jmax_p_red, float phase_diff,
+      float phase_red) const noexcept {
     ZoneScoped;
     assert(waveform_data_ != nullptr);
     assert(phase_diff < 0);
@@ -480,9 +448,10 @@ class Oscillator {
     // return i_array;
   }
 
-  void computeFwdI(std::array<std::complex<float>, kNumCoeffs>& aligned_array,
-                   int mipmap_idx, int jmin_red, int jmax_p_red,
-                   float phase_diff, float phase_red) const noexcept {
+  void computeFwdI(
+      std::array<std::complex<float>, kUpperNumCoeffs>& aligned_array,
+      int mipmap_idx, int jmin_red, int jmax_p_red, float phase_diff,
+      float phase_red) const noexcept {
     ZoneScoped;
     assert(waveform_data_ != nullptr);
     const auto prev_phase_red_bar =
@@ -573,7 +542,7 @@ class Oscillator {
     const auto jmax_p_red = maths::reduce(jmax, waveform_len);
 
     alignas(kAligment) auto i_cpx_array =
-        std::array<std::complex<float>, kNumCoeffs>();
+        std::array<std::complex<float>, kUpperNumCoeffs>();
 
     // Compute the I complex sum
     computeFwdI(i_cpx_array, mipmap_idx, jmin_red, jmax_p_red, phase_diff,
@@ -585,15 +554,23 @@ class Oscillator {
       const auto jmax_p_red_up = jmax_p_red / 2;
 
       alignas(kAligment) auto i_cpx_array_up =
-          std::array<std::complex<float>, kNumCoeffs>();
+          std::array<std::complex<float>, kUpperNumCoeffs>();
 
       // Compute the upper mipmap I complex sum
       computeFwdI(i_cpx_array_up, mipmap_idx_up, jmin_red_up, jmax_p_red_up,
                   phase_diff, phase_red);
 
       // Crossfade
-      for (auto&& [i_cpx, i_cpx_up] : iter::zip(i_cpx_array, i_cpx_array_up)) {
-        i_cpx = i_cpx * mipmap_weight + i_cpx_up * mipmap_weight_up;
+      if constexpr (kPartialSize > kBatchThreshold) {
+        for (auto&& [i_cpx, i_cpx_up] :
+             iter::zip(i_cpx_array, i_cpx_array_up)) {
+          i_cpx = i_cpx * mipmap_weight + i_cpx_up * mipmap_weight_up;
+        }
+      } else {
+        for (auto i : iter::range(kNumCoeffs)) {
+          i_cpx_array[i] = i_cpx_array[i] * mipmap_weight +
+                           i_cpx_array_up[i] * mipmap_weight_up;
+        }
       }
     }
 
@@ -672,7 +649,7 @@ class Oscillator {
     const auto jmax_p_red = maths::reduce(jmax, waveform_len);
 
     alignas(kAligment) auto i_cpx_array =
-        std::array<std::complex<float>, kNumCoeffs>();
+        std::array<std::complex<float>, kUpperNumCoeffs>();
 
     // Compute the I complex sum
     computeBwdI(i_cpx_array, mipmap_idx, jmin, jmin_red, jmax_p_red, phase_diff,
@@ -684,15 +661,23 @@ class Oscillator {
       const auto jmax_p_red_up = jmax_p_red / 2;
 
       alignas(kAligment) auto i_cpx_array_up =
-          std::array<std::complex<float>, kNumCoeffs>();
+          std::array<std::complex<float>, kUpperNumCoeffs>();
 
       // Compute the upper mipmap I complex sum
       computeBwdI(i_cpx_array_up, mipmap_idx_up, jmin, jmin_red_up,
                   jmax_p_red_up, phase_diff, phase_red);
 
       // Crossfade
-      for (auto&& [i_cpx, i_cpx_up] : iter::zip(i_cpx_array, i_cpx_array_up)) {
-        i_cpx = i_cpx * mipmap_weight + i_cpx_up * mipmap_weight_up;
+      if constexpr (kPartialSize > kBatchThreshold) {
+        for (auto&& [i_cpx, i_cpx_up] :
+             iter::zip(i_cpx_array, i_cpx_array_up)) {
+          i_cpx = i_cpx * mipmap_weight + i_cpx_up * mipmap_weight_up;
+        }
+      } else {
+        for (auto i : iter::range(kNumCoeffs)) {
+          i_cpx_array[i] = i_cpx_array[i] * mipmap_weight +
+                           i_cpx_array_up[i] * mipmap_weight_up;
+        }
       }
     }
 

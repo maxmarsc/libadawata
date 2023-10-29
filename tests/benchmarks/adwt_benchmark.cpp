@@ -65,11 +65,11 @@ void bmSweepUpOrder2(benchmark::State& state) {
 }
 
 void bmSweepUpOrder4(benchmark::State& state) {
-  const auto block_size       = state.range(0);
-  const auto num_frames       = 2048 * 100;
-  const auto num_blocks       = num_frames / block_size;
-  const auto samplerate       = 44100.F;
-  constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
+  const auto block_size = state.range(0);
+  const auto num_frames = 2048 * 100;
+  const auto num_blocks = num_frames / block_size;
+  const auto samplerate = 44100.F;
+  // constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
 
   // // Load the waveform file
   // auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
@@ -112,11 +112,11 @@ void bmSweepUpOrder4(benchmark::State& state) {
 }
 
 void bmSweepUpOrder6(benchmark::State& state) {
-  const auto block_size       = state.range(0);
-  const auto num_frames       = 2048 * 100;
-  const auto num_blocks       = num_frames / block_size;
-  const auto samplerate       = 44100.F;
-  constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
+  const auto block_size = state.range(0);
+  const auto num_frames = 2048 * 100;
+  const auto num_blocks = num_frames / block_size;
+  const auto samplerate = 44100.F;
+  // constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
 
   // // Load the waveform file
   // auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
@@ -159,11 +159,11 @@ void bmSweepUpOrder6(benchmark::State& state) {
 }
 
 void bmSweepUpOrder8(benchmark::State& state) {
-  const auto block_size       = state.range(0);
-  const auto num_frames       = 2048 * 100;
-  const auto num_blocks       = num_frames / block_size;
-  const auto samplerate       = 44100.F;
-  constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
+  const auto block_size = state.range(0);
+  const auto num_frames = 2048 * 100;
+  const auto num_blocks = num_frames / block_size;
+  const auto samplerate = 44100.F;
+  // constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
 
   // // Load the waveform file
   // auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);
@@ -206,11 +206,11 @@ void bmSweepUpOrder8(benchmark::State& state) {
 }
 
 void bmSweepUpOrder10(benchmark::State& state) {
-  const auto block_size       = state.range(0);
-  const auto num_frames       = 2048 * 100;
-  const auto num_blocks       = num_frames / block_size;
-  const auto samplerate       = 44100.F;
-  constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
+  const auto block_size = state.range(0);
+  const auto num_frames = 2048 * 100;
+  const auto num_blocks = num_frames / block_size;
+  const auto samplerate = 44100.F;
+  // constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
 
   // // Load the waveform file
   // auto waveform_sndfile   = SndfileHandle(kSawWaveFile.data(), SFM_READ);

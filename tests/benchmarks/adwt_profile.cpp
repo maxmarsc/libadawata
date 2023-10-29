@@ -39,7 +39,7 @@ void profileSweepUpOrder6(int block_size) {
   // Prepare the processing block
   auto output_vec = std::vector<float>(num_frames);
 
-  for (auto i : iter::range(1)) {
+  for (auto i : iter::range(num_blocks)) {
     auto phase_span = std::span(phase_sweep.begin() + i * block_size,
                                 phase_sweep.begin() + (i + 1) * block_size);
 
