@@ -6,3 +6,5 @@
 - [ ] Documentation
 - [ ] README
 - [ ] Make SOXR dependency optional
+- [ ] Added CMake install configuration
+- [ ] Added pkgconfig cmake configuration ?
