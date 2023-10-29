@@ -1,6 +1,10 @@
 include(xsimd)
 include(Tracy)
 
+if(NOT ENABLE_CXX20)
+  include(gsl)
+endif()
+
 add_library(
   adawata
   ${CMAKE_CURRENT_SOURCE_DIR}/adwt.cpp
@@ -25,18 +29,20 @@ target_link_libraries(
          $<$<BOOL:${USE_TRACY}>:pthread>
          $<$<BOOL:${USE_TRACY}>:dl>
          # $<$<BOOL:${USE_ASAN}>:asan>
+         # $<$<NOT:$<BOOL:${ENABLE_CXX20}>>:"Microsoft\.GSL\:\:GSL">
+         $<$<NOT:$<BOOL:${ENABLE_CXX20}>>:Microsoft.GSL::GSL>
 )
 
-set_target_properties(
-  adawata
-  PROPERTIES CXX_STANDARD 20
-)
+if(ENABLE_CXX20)
+  set_target_properties(adawata PROPERTIES CXX_STANDARD 20)
+else()
+  set_target_properties(adawata PROPERTIES CXX_STANDARD 17)
+endif()
 
 target_compile_options(
   adawata
   PUBLIC -ffast-math $<$<BOOL:${USE_ASAN}>:-fsanitize=address>
-  # -fopt-info-vec-optimized
-  # -fopt-info-vec-missed
+  # -fopt-info-vec-optimized -fopt-info-vec-missed
 )
 
 target_link_options(

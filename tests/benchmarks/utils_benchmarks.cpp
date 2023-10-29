@@ -3,9 +3,9 @@
 * Created by maxmarsc, 08/10/2023
 */
 
-#include "utils_benchmarks.hpp"
 #include <cmath>
 #include "cppitertools/range.hpp"
+#include "utils_benchmarks.hpp"
 
 namespace benchmarks {
 
@@ -29,7 +29,7 @@ for each sample
     delta = 2 * pi * f / Fs;  // re-calculate phase increment
 */
 
-void generateLinearSweepPhase(std::span<float> dst, float start, float end,
+void generateLinearSweepPhase(adwt::Span<float> dst, float start, float end,
                               float sr) {
   const auto f_step = (end - start) / static_cast<float>(dst.size());
   auto freq         = start;

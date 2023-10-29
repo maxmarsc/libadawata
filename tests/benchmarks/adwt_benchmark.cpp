@@ -43,11 +43,11 @@ void bmSweepUpOrder2(benchmark::State& state) {
 
   for (auto _ : state) {
     for (auto i : iter::range(num_blocks)) {
-      auto phase_span = std::span(phase_sweep.begin() + i * block_size,
-                                  phase_sweep.begin() + (i + 1) * block_size);
+      auto phase_span =
+          adwt::Span<float>(phase_sweep.data() + i * block_size, block_size);
 
-      auto output_span = std::span(output_vec.begin() + i * block_size,
-                                   output_vec.begin() + (i + 1) * block_size);
+      auto output_span =
+          adwt::Span<float>(output_vec.data() + i * block_size, block_size);
       osc.process<adwt::Direction::kForward>(phase_span, output_span);
     }
   }
@@ -82,8 +82,8 @@ void bmSweepUpOrder4(benchmark::State& state) {
 
   for (auto _ : state) {
     for (auto i : iter::range(num_blocks)) {
-      auto phase_span = std::span(phase_sweep.begin() + i * block_size,
-                                  phase_sweep.begin() + (i + 1) * block_size);
+      auto phase_span =
+          adwt::Span<float>(phase_sweep.data() + i * block_size, block_size);
       osc.process<adwt::Direction::kForward>(phase_span, block_dst);
     }
   }
@@ -118,8 +118,8 @@ void bmSweepUpOrder6(benchmark::State& state) {
 
   for (auto _ : state) {
     for (auto i : iter::range(num_blocks)) {
-      auto phase_span = std::span(phase_sweep.begin() + i * block_size,
-                                  phase_sweep.begin() + (i + 1) * block_size);
+      auto phase_span =
+          adwt::Span<float>(phase_sweep.data() + i * block_size, block_size);
       osc.process<adwt::Direction::kForward>(phase_span, block_dst);
     }
   }
@@ -154,8 +154,8 @@ void bmSweepUpOrder8(benchmark::State& state) {
 
   for (auto _ : state) {
     for (auto i : iter::range(num_blocks)) {
-      auto phase_span = std::span(phase_sweep.begin() + i * block_size,
-                                  phase_sweep.begin() + (i + 1) * block_size);
+      auto phase_span =
+          adwt::Span<float>(phase_sweep.data() + i * block_size, block_size);
       osc.process<adwt::Direction::kForward>(phase_span, block_dst);
     }
   }
@@ -190,8 +190,8 @@ void bmSweepUpOrder10(benchmark::State& state) {
 
   for (auto _ : state) {
     for (auto i : iter::range(num_blocks)) {
-      auto phase_span = std::span(phase_sweep.begin() + i * block_size,
-                                  phase_sweep.begin() + (i + 1) * block_size);
+      auto phase_span =
+          adwt::Span<float>(phase_sweep.data() + i * block_size, block_size);
       osc.process<adwt::Direction::kForward>(phase_span, block_dst);
     }
   }

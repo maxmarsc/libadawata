@@ -12,11 +12,11 @@
 #include <iostream>
 #include <memory>
 #include <numeric>
-#include <span>
 
 #include "adwt/direction.hpp"
 #include "adwt/filter_type.hpp"
 #include "adwt/maths.hpp"
+#include "adwt/span.hpp"
 #include "adwt/waveform_data.hpp"
 #include "cppitertools/range.hpp"
 
@@ -53,7 +53,6 @@ class Oscillator {
       }
       return (kNumBatch + 1) * kBatchSize;
     }
-    // return kBatchSize * maths::floor(kNumCoeffs / kBatchSize);
   }
 
   static constexpr auto kNumCoeffs      = numCoeffs<Ftype>();
@@ -98,7 +97,7 @@ class Oscillator {
 
   //============================================================================
   template <Direction Dir>
-  inline void process(std::span<const float> phases, std::span<float> output) {
+  inline void process(Span<const float> phases, Span<float> output) {
     if constexpr (Dir == Direction::kForward) {
       processFwd(phases, output);
     } else {
@@ -150,9 +149,19 @@ class Oscillator {
       int mipmap_idx, int idx_prev_bound, int idx_next_bound, float phase_diff,
       float prev_phase_red_bar, float phase_red_bar) const noexcept {
     ZoneScoped;
-    // Get the span of m & q
-    auto m_span = waveform_data_->m(crt_waveform_, mipmap_idx);
-    auto q_span = waveform_data_->q(crt_waveform_, mipmap_idx);
+    // // Get the span of m & q
+    // auto m_span = waveform_data_->m(crt_waveform_, mipmap_idx);
+    // auto q_span = waveform_data_->q(crt_waveform_, mipmap_idx);
+
+    // Get the spans of m & q
+#if __cplusplus == 201703L
+    // gsl::span performs bound-checking on the [] operator
+    const auto* m_span = waveform_data_->m(crt_waveform_, mipmap_idx).data();
+    const auto* q_span = waveform_data_->q(crt_waveform_, mipmap_idx).data();
+#else
+    auto m_span     = waveform_data_->m(crt_waveform_, mipmap_idx);
+    auto q_span     = waveform_data_->q(crt_waveform_, mipmap_idx);
+#endif
 
     // Compute the recurrent parts of I_0
     const auto part_a = m_span[idx_prev_bound] * phase_diff;
@@ -213,10 +222,19 @@ class Oscillator {
     const auto born_sup =
         jmax_p_red + waveform_len * static_cast<int>(jmin_red > jmax_p_red);
 
-    // Get the spans
+// Get the spans
+#if __cplusplus == 201703L
+    // gsl::span performs bound-checking on the [] operator
+    const auto* mdiff_span =
+        waveform_data_->mDiff(crt_waveform_, mipmap_idx).data();
+    const auto* qdiff_span =
+        waveform_data_->qDiff(crt_waveform_, mipmap_idx).data();
+    const auto* phase_span = waveform_data_->phases(mipmap_idx).data();
+#else
     auto mdiff_span = waveform_data_->mDiff(crt_waveform_, mipmap_idx);
     auto qdiff_span = waveform_data_->qDiff(crt_waveform_, mipmap_idx);
     auto phase_span = waveform_data_->phases(mipmap_idx);
+#endif
 
     // Compute the array of I_sum
     for (auto i : iter::range(jmin_red, born_sup)) {
@@ -295,10 +313,19 @@ class Oscillator {
         jmax_p_red + waveform_len * static_cast<int>(jmin_red > jmax_p_red);
     const auto cycle_offset = jmin != 0 && jmin_red > jmax_p_red ? -1.F : 0.F;
 
-    // Get the spans
+// Get the spans
+#if __cplusplus == 201703L
+    // gsl::span performs bound-checking on the [] operator
+    const auto* mdiff_span =
+        waveform_data_->mDiff(crt_waveform_, mipmap_idx).data();
+    const auto* qdiff_span =
+        waveform_data_->qDiff(crt_waveform_, mipmap_idx).data();
+    const auto* phase_span = waveform_data_->phases(mipmap_idx).data();
+#else
     auto mdiff_span = waveform_data_->mDiff(crt_waveform_, mipmap_idx);
     auto qdiff_span = waveform_data_->qDiff(crt_waveform_, mipmap_idx);
     auto phase_span = waveform_data_->phases(mipmap_idx);
+#endif
 
     // Compute the array of I_sum
     for (auto i : iter::range(jmin_red, born_sup)) {
@@ -402,7 +429,7 @@ class Oscillator {
                    phase_red);
   }
 
-  void processFwd(std::span<const float> phases, std::span<float> output) {
+  void processFwd(Span<const float> phases, Span<float> output) {
     ZoneScoped;
     assert(waveform_data_ != nullptr);
     assert(phases.size() == output.size());
@@ -417,7 +444,7 @@ class Oscillator {
     }
   }
 
-  void processBi(std::span<const float> phases, std::span<float> output) {
+  void processBi(Span<const float> phases, Span<float> output) {
     ZoneScoped;
     assert(waveform_data_ != nullptr);
     assert(phases.size() == output.size());

@@ -15,7 +15,7 @@ OvsOscillator<B>::OvsOscillator(const DownsamplerCtorArgs<Downsampler<B>>& args)
     : downsampler_(args) {}
 
 template <ResamplingBackend B>
-[[nodiscard]] int OvsOscillator<B>::init(std::span<const float> waveform,
+[[nodiscard]] int OvsOscillator<B>::init(adwt::Span<const float> waveform,
                                          int block_size, float samplerate,
                                          int ratio) {
   if (ratio <= 0 || block_size <= 0)
@@ -33,8 +33,8 @@ template <ResamplingBackend B>
 }
 
 template <ResamplingBackend B>
-void OvsOscillator<B>::process(std::span<float> phases,
-                               std::span<float> output) {
+void OvsOscillator<B>::process(adwt::Span<float> phases,
+                               adwt::Span<float> output) {
   assert(phases.size() == output.size() * static_cast<std::size_t>(ratio_));
   assert(phases.size() == upsampled_data_.size());
 

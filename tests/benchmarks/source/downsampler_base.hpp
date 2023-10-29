@@ -6,7 +6,8 @@
 #pragma once
 
 #include <cassert>
-#include <span>
+// #include <span>
+#include "adwt/span.hpp"
 
 namespace ovs {
 
@@ -27,7 +28,7 @@ class DownsamplerBase {
                                                     ratio);
   }
 
-  inline void process(std::span<float> src, std::span<float> dst) {
+  inline void process(adwt::Span<float> src, adwt::Span<float> dst) {
     assert(src.size() == dst.size() * ratio_ && !src.empty());
     static_cast<Derived*>(this)->processDerived(src, dst);
   }
@@ -36,7 +37,7 @@ class DownsamplerBase {
 
  protected:
   [[nodiscard]] int initDerived(int block_size, float samplerate, int ratio);
-  void processDerived(std::span<float> src, std::span<float> dst);
+  void processDerived(adwt::Span<float> src, adwt::Span<float> dst);
   void cleanupDerived() {}
 
   int ratio_{};

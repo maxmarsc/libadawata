@@ -9,6 +9,11 @@ option(BUILD_BENCHMARKS
        "Enable the build of the benchmarking binaries. Will force BUILD_TESTING"
        On
 )
+option(
+  ENABLE_CXX20
+  "Enable the use of C++20, otherwise only C++17 is supported and gsl::span will be used"
+  On
+)
 
 # Debug options
 option(USE_TRACY "Enable tracy profiling of benchmark binaries" Off)

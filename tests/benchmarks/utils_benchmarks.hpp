@@ -5,11 +5,12 @@
 
 #pragma once
 
-#include <span>
+// #include <span>
+#include "adwt/span.hpp"
 
 namespace benchmarks {
 
-void generateLinearSweepPhase(std::span<float> dst, float start, float end,
+void generateLinearSweepPhase(adwt::Span<float> dst, float start, float end,
                               float sr);
 
 }  // namespace benchmarks

@@ -32,7 +32,7 @@ class DownsamplerJUCE final : public DownsamplerBase<DownsamplerJUCE> {
 
  protected:
   [[nodiscard]] int initDerived(int block_size, float samplerate, int ratio);
-  void processDerived(std::span<float> src, std::span<float> dst) noexcept;
+  void processDerived(adwt::Span<float> src, adwt::Span<float> dst) noexcept;
 
  private:
   juce::dsp::Oversampling<float> downsampler_;

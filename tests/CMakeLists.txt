@@ -8,7 +8,7 @@ set(ASSETS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 # ##############################################################################
 add_executable(
   libadawata_tests
-  # ${CMAKE_CURRENT_SOURCE_DIR}/waveform_data_tests.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/waveform_data_tests.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/oscillator_tests.cpp
 )
 
@@ -17,10 +17,13 @@ target_include_directories(
   PRIVATE ${PROJECT_SOURCE_DIR} ${SNDFILE_INSTALL_DIR}/include
 )
 
-set_target_properties(
-  libadawata_tests
-  PROPERTIES CXX_STANDARD 20
-)
+# set_target_properties( libadawata_tests PROPERTIES CXX_STANDARD 20 )
+
+if(ENABLE_CXX20)
+  set_target_properties(libadawata_tests PROPERTIES CXX_STANDARD 20)
+else()
+  set_target_properties(libadawata_tests PROPERTIES CXX_STANDARD 17)
+endif()
 
 target_compile_options(
   libadawata_tests

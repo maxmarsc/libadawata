@@ -25,7 +25,7 @@ inline float computeQ(float x0, float x1, float y0, float y1) {
 }
 
 //==============================================================================
-WaveformData::WaveformData(std::span<const float> waveforms, int num_waveforms,
+WaveformData::WaveformData(Span<const float> waveforms, int num_waveforms,
                            int samplerate, float mipmap_ratio)
     : mipmap_ratio_((1.F + mipmap_ratio) / 2.F) {
   // Resize the vectors to be sure then can hold enough waveforms
@@ -72,9 +72,10 @@ WaveformData::WaveformData(std::span<const float> waveforms, int num_waveforms,
   }
 }
 
-std::unique_ptr<WaveformData> WaveformData::build(
-    std::span<const float> waveforms, int num_waveforms, int samplerate,
-    float mipmap_ratio) {
+std::unique_ptr<WaveformData> WaveformData::build(Span<const float> waveforms,
+                                                  int num_waveforms,
+                                                  int samplerate,
+                                                  float mipmap_ratio) {
   if (waveforms.empty())
     return nullptr;
   if (num_waveforms <= 0)
@@ -143,8 +144,8 @@ void WaveformData::computeMipMapScale(int waveform_len, float samplerate) {
   }
 }
 
-void WaveformData::computeMQValues(std::span<const float> waveform,
-                                   int waveform_idx, int mipmap_idx) {
+void WaveformData::computeMQValues(Span<const float> waveform, int waveform_idx,
+                                   int mipmap_idx) {
   assert(!m_.empty());
   assert(q_.size() == numWaveforms());
   assert(m_diff_.size() == numWaveforms());
@@ -197,8 +198,8 @@ void WaveformData::computePhaseVector(int waveform_len, int mipmap_idx) {
   }
 }
 
-std::vector<float> WaveformData::downsampleWaveform(
-    std::span<const float> waveform, int ratio) {
+std::vector<float> WaveformData::downsampleWaveform(Span<const float> waveform,
+                                                    int ratio) {
   constexpr auto kRepetitions = 3;
   static_assert(maths::isOdd(kRepetitions));
   const auto in_size  = static_cast<int>(waveform.size());

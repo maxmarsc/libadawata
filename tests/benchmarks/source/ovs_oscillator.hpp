@@ -6,6 +6,7 @@
 #pragma once
 
 #include <vector>
+#include "adwt/span.hpp"
 #include "downsampler.hpp"
 
 namespace ovs {
@@ -15,11 +16,11 @@ class OvsOscillator {
  public:
   explicit OvsOscillator(const DownsamplerCtorArgs<Downsampler<B>>&);
 
-  [[nodiscard]] int init(std::span<const float> waveform, int block_size,
+  [[nodiscard]] int init(adwt::Span<const float> waveform, int block_size,
                          float samplerate, int ratio);
 
-  void process(std::span<float> phases, std::span<float> output);
-  void processRaw(std::span<float> phases, std::span<float> output);
+  void process(adwt::Span<float> phases, adwt::Span<float> output);
+  void processRaw(adwt::Span<float> phases, adwt::Span<float> output);
 
  private:
   Downsampler<B> downsampler_;

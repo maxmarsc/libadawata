@@ -22,8 +22,8 @@ DownsamplerJUCE::DownsamplerJUCE(const DownsamplerJUCE::CtorArgs& args)
   return 0;
 }
 
-void DownsamplerJUCE::processDerived(std::span<float> src,
-                                     std::span<float> dst) noexcept {
+void DownsamplerJUCE::processDerived(adwt::Span<float> src,
+                                     adwt::Span<float> dst) noexcept {
   std::memcpy(upsampled_block_.getChannelPointer(0), src.data(),
               src.size() * sizeof(float));
   auto* dst_data = dst.data();

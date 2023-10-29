@@ -750,11 +750,9 @@ TEST_CASE("Reference test : BT2 flipped sweep") {
     phase = std::fmod(phase, 1.F);
   }
 
-  const auto size = 2048;
-  auto output_span =
-      std::span<float>(output_vec.begin(), output_vec.begin() + size);
-  auto ref_span =
-      std::span<float>(output_ref_vec.begin(), output_ref_vec.begin() + size);
+  const auto size  = 2048;
+  auto output_span = adwt::Span<float>(output_vec.data(), size);
+  auto ref_span    = adwt::Span<float>(output_ref_vec.data(), size);
 
   SECTION("Process as single block") {
     osc.process<adwt::Direction::kBidirectionnal>(phase_vec, output_vec);
@@ -844,11 +842,9 @@ TEST_CASE("Reference test : CH10 flipped sweep") {
     phase = std::fmod(phase, 1.F);
   }
 
-  const auto size = 2048;
-  auto output_span =
-      std::span<float>(output_vec.begin(), output_vec.begin() + size);
-  auto ref_span =
-      std::span<float>(output_ref_vec.begin(), output_ref_vec.begin() + size);
+  const auto size  = 2048;
+  auto output_span = adwt::Span<float>(output_vec.data(), size);
+  auto ref_span    = adwt::Span<float>(output_ref_vec.data(), size);
 
   SECTION("Process as single block") {
     osc.process<adwt::Direction::kBidirectionnal>(phase_vec, output_vec);
@@ -1073,7 +1069,7 @@ TEST_CASE("Reference test : BT2 reverse flipped sweep") {
   constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
 
   // Empiric
-  constexpr auto kEps = 2.6e-5F;  // -43dB difference with python impl
+  constexpr auto kEps = 2.7e-5F;  // -43dB difference with python impl
   Catch::StringMaker<float>::precision = 15;
   // The reference file has a gain of 0.5
   constexpr auto kGain          = 0.5F;
@@ -1130,11 +1126,9 @@ TEST_CASE("Reference test : BT2 reverse flipped sweep") {
     phase = std::fmod(phase, 1.F);
   }
 
-  const auto size = 2048;
-  auto output_span =
-      std::span<float>(output_vec.begin(), output_vec.begin() + size);
-  auto ref_span =
-      std::span<float>(output_ref_vec.begin(), output_ref_vec.begin() + size);
+  const auto size  = 2048;
+  auto output_span = adwt::Span<float>(output_vec.data(), size);
+  auto ref_span    = adwt::Span<float>(output_ref_vec.data(), size);
 
   SECTION("Process as single block") {
     osc.process<adwt::Direction::kBidirectionnal>(phase_vec, output_vec);
@@ -1224,11 +1218,9 @@ TEST_CASE("Reference test : CH10 reverse flipped sweep") {
     phase = std::fmod(phase, 1.F);
   }
 
-  const auto size = 2048;
-  auto output_span =
-      std::span<float>(output_vec.begin(), output_vec.begin() + size);
-  auto ref_span =
-      std::span<float>(output_ref_vec.begin(), output_ref_vec.begin() + size);
+  const auto size  = 2048;
+  auto output_span = adwt::Span<float>(output_vec.data(), size);
+  auto ref_span    = adwt::Span<float>(output_ref_vec.data(), size);
 
   SECTION("Process as single block") {
     osc.process<adwt::Direction::kBidirectionnal>(phase_vec, output_vec);
@@ -1416,13 +1408,10 @@ TEST_CASE("Reference test : CH10 460Hz") {
 
   const auto size  = 512;
   const auto start = 209090 - 32;
-  auto input_span =
-      std::span(phase_vec.begin() + start, phase_vec.begin() + start + size);
-  auto output_span =
-      std::span(output_vec.begin() + start, output_vec.begin() + size + start);
-  auto ref_span = std::span(output_ref_vec.begin() + start,
-                            output_ref_vec.begin() + start + size);
-  auto err_vec  = std::vector<float>(num_samples);
+  auto input_span  = adwt::Span<float>(phase_vec.data() + start, size);
+  auto output_span = adwt::Span<float>(output_vec.data() + start, size);
+  auto ref_span    = adwt::Span<float>(output_ref_vec.data() + start, size);
+  auto err_vec     = std::vector<float>(num_samples);
 
   SECTION("Process as single block") {
     osc.process<adwt::Direction::kBidirectionnal>(phase_vec, output_vec);

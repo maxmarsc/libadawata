@@ -10,14 +10,20 @@ target_include_directories(
   PUBLIC ${PROJECT_SOURCE_DIR} ${ITERTOOLS_INSTALL_DIR}/include
 )
 
-set_target_properties(
-  utils_benchmarks
-  PROPERTIES CXX_STANDARD 20
-)
+if(ENABLE_CXX20)
+  set_target_properties(utils_benchmarks PROPERTIES CXX_STANDARD 20)
+else()
+  set_target_properties(utils_benchmarks PROPERTIES CXX_STANDARD 17)
+endif()
 
 target_compile_options(
   utils_benchmarks
   PRIVATE -Wall -Wextra
+)
+
+target_link_libraries(
+  utils_benchmarks
+  PUBLIC adawata
 )
 
 add_dependencies(utils_benchmarks itertools_project)
@@ -36,10 +42,13 @@ target_include_directories(
           ${SNDFILE_INSTALL_DIR}/include
 )
 
-set_target_properties(
-  adwt_benchmark
-  PROPERTIES CXX_STANDARD 20
-)
+# set_target_properties( adwt_benchmark PROPERTIES CXX_STANDARD 20 )
+
+if(ENABLE_CXX20)
+  set_target_properties(adwt_benchmark PROPERTIES CXX_STANDARD 20)
+else()
+  set_target_properties(adwt_benchmark PROPERTIES CXX_STANDARD 17)
+endif()
 
 target_compile_options(
   adwt_benchmark
@@ -77,10 +86,13 @@ target_include_directories(
   PRIVATE ${PROJECT_SOURCE_DIR} ${SNDFILE_INSTALL_DIR}/include
 )
 
-set_target_properties(
-  adwt_profiler
-  PROPERTIES CXX_STANDARD 20
-)
+# set_target_properties( adwt_profiler PROPERTIES CXX_STANDARD 20 )
+
+if(ENABLE_CXX20)
+  set_target_properties(adwt_profiler PROPERTIES CXX_STANDARD 20)
+else()
+  set_target_properties(adwt_profiler PROPERTIES CXX_STANDARD 17)
+endif()
 
 target_compile_options(
   adwt_profiler
@@ -118,10 +130,13 @@ target_include_directories(
           ${SNDFILE_INSTALL_DIR}/include
 )
 
-set_target_properties(
-  juce_benchmark
-  PROPERTIES CXX_STANDARD 20
-)
+# set_target_properties( juce_benchmark PROPERTIES CXX_STANDARD 20 )
+
+if(ENABLE_CXX20)
+  set_target_properties(juce_benchmark PROPERTIES CXX_STANDARD 20)
+else()
+  set_target_properties(juce_benchmark PROPERTIES CXX_STANDARD 17)
+endif()
 
 target_compile_options(
   juce_benchmark

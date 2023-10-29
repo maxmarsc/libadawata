@@ -33,10 +33,11 @@ target_link_libraries(
          juce::juce_recommended_warning_flags juce::juce_dsp
 )
 
-set_target_properties(
-  ovs_oscillator
-  PROPERTIES CXX_STANDARD 20
-)
+if(ENABLE_CXX20)
+  set_target_properties(ovs_oscillator PROPERTIES CXX_STANDARD 20)
+else()
+  set_target_properties(ovs_oscillator PROPERTIES CXX_STANDARD 17)
+endif()
 
 target_compile_options(
   ovs_oscillator
