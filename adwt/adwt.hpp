@@ -132,10 +132,9 @@ class Oscillator {
     assert(waveform_data_ != nullptr);
     prev_cpx_y_array_ = std::array<std::complex<float>, kNumCoeffs>{};
     prev_phase_       = init_phase;
-    // prev_phase_red_   = std::fmod(init_phase, 1.F);
-    prev_phase_red_  = maths::reduce(init_phase, 1.F);
-    prev_phase_diff_ = init_phase_diff;
-    prev_mipmap_idx_ = std::get<0>(
+    prev_phase_red_   = maths::reduce(init_phase, 1.F);
+    prev_phase_diff_  = init_phase_diff;
+    prev_mipmap_idx_  = std::get<0>(
         waveform_data_->findMipMapIndexes(std::fabs(init_phase_diff)));
     const auto waveform_len = waveform_data_->waveformLen(prev_mipmap_idx_);
 
@@ -203,13 +202,6 @@ class Oscillator {
                            part_c - z_array_[i] * part_d;
       }
     }
-
-    //NOLINTNEXTLINE
-    // #pragma GCC ivdep
-    // for (std::size_t i = 0; i < kNumCoeffs; ++i) {
-    //   aligned_array[i] = exp_z_array_[i] * (part_a + z_array_[i] * part_b) -
-    //                      part_c - z_array_[i] * part_d;
-    // }
   }
 
   inline void computeISumFwd(
@@ -289,12 +281,6 @@ class Oscillator {
                    (phase_diff + z_array_[order] * phase_span[i_red + 1]));
         }
       }
-
-      // for (auto&& [i_sum, z] : iter::zip(aligned_array, z_array_)) {
-      //   i_sum += std::exp(z * part_a) *
-      //            (z * qdiff_span[i_red] +
-      //             mdiff_span[i_red] * (phase_diff + z * phase_span[i_red + 1]));
-      // }
     }
   }
 
@@ -376,52 +362,8 @@ class Oscillator {
                    (phase_diff + z_array_[order] * phase_span[i_red + 1]));
         }
       }
-
-      //NOLINTNEXTLINE
-      // #pragma GCC ivdep
-      // for (std::size_t i = 0; i < kNumCoeffs; ++i) {
-      //   aligned_array[i] -=
-      //       std::exp(z_array_[i] * part_a) *
-      //       (z_array_[i] * qdiff_span[i_red] +
-      //        mdiff_span[i_red] *
-      //            (phase_diff + z_array_[i] * phase_span[i_red + 1]));
-      // }
     }
   }
-
-  // std::array<std::complex<float>, kNumCoeffs> computeBiI(
-  //     int mipmap_idx, int jmin, int jmin_red, int jmax_p_red, float phase_diff,
-  //     float phase_red) const noexcept {
-  //   ZoneScoped;
-  //   assert(waveform_data_ != nullptr);
-  //   const auto forward = phase_diff > 0;
-  //   const auto prev_phase_red_bar =
-  //       prev_phase_red_ +
-  //       static_cast<int>(prev_phase_red_ == 0.F) * static_cast<int>(forward);
-  //   const auto phase_red_bar =
-  //       phase_red + static_cast<float>(static_cast<int>(phase_red == 0.F) *
-  //                                      static_cast<int>(!forward));
-
-  //   const auto idx_prev_bound = forward ? jmin_red : jmax_p_red;
-  //   const auto idx_next_bound = forward ? jmax_p_red : jmin_red;
-
-  //   // Compute the array of I_0
-  //   alignas(alignof(std::complex<float>)) auto i_array =
-  //       std::array<std::complex<float>, kNumCoeffs>();
-
-  //   computeI0(i_array, mipmap_idx, idx_prev_bound, idx_next_bound, phase_diff,
-  //             prev_phase_red_bar, phase_red_bar);
-
-  //   if (forward) {
-  //     computeISumFwd(i_array, mipmap_idx, jmin_red, jmax_p_red, phase_diff,
-  //                    phase_red);
-  //   } else {
-  //     computeISumBwd(i_array, mipmap_idx, jmin, jmin_red, jmax_p_red,
-  //                    phase_diff, phase_red);
-  //   }
-
-  //   return i_array;
-  // }
 
   void computeBwdI(
       std::array<std::complex<float>, kUpperNumCoeffs>& aligned_array,
@@ -432,10 +374,6 @@ class Oscillator {
     assert(phase_diff < 0);
     const auto prev_phase_red_bar = prev_phase_red_;
     const auto phase_red_bar = phase_red + static_cast<float>(phase_red == 0.F);
-
-    // Creates the aligned array for I_0 and I_sum computation
-    // alignas(kAligment) auto i_array =
-    //     std::array<std::complex<float>, kNumCoeffs>();
 
     // Compute I_0
     computeI0(aligned_array, mipmap_idx, jmax_p_red, jmin_red, phase_diff,
