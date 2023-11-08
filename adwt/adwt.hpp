@@ -21,7 +21,6 @@
 #include "cppitertools/range.hpp"
 
 #include <cppitertools/zip.hpp>
-#include <tracy/Tracy.hpp>
 #include <xsimd/xsimd.hpp>
 
 namespace xs = xsimd;
@@ -127,7 +126,6 @@ class Oscillator {
  private:
   //============================================================================
   void resetInternals(float init_phase, float init_phase_diff) {
-    ZoneScoped;
     assert(waveform_data_ != nullptr);
     prev_cpx_y_array_ = std::array<std::complex<float>, kNumCoeffs>{};
     prev_phase_       = init_phase;
@@ -148,7 +146,6 @@ class Oscillator {
       std::array<std::complex<float>, kUpperNumCoeffs>& aligned_array,
       int mipmap_idx, int idx_prev_bound, int idx_next_bound, float phase_diff,
       float prev_phase_red_bar, float phase_red_bar) const noexcept {
-    ZoneScoped;
 
     // Get the spans of m & q
 #if !defined(ADWT_ENABLE_CXX20) & defined(NDEBUG)
@@ -214,7 +211,6 @@ class Oscillator {
       std::array<std::complex<float>, kUpperNumCoeffs>& aligned_array,
       int mipmap_idx, int jmin_red, int jmax_p_red, float phase_diff,
       float phase_red) const noexcept {
-    ZoneScoped;
     const auto waveform_len = waveform_data_->waveformLen(mipmap_idx);
     const auto born_sup =
         jmax_p_red + waveform_len * static_cast<int>(jmin_red > jmax_p_red);
@@ -303,7 +299,6 @@ class Oscillator {
       std::array<std::complex<float>, kUpperNumCoeffs>& aligned_array,
       int mipmap_idx, int jmin, int jmin_red, int jmax_p_red, float phase_diff,
       float phase_red) const noexcept {
-    ZoneScoped;
     assert(phase_diff < 0);
     const auto waveform_len = waveform_data_->waveformLen(mipmap_idx);
     const auto born_sup =
@@ -393,7 +388,6 @@ class Oscillator {
       std::array<std::complex<float>, kUpperNumCoeffs>& aligned_array,
       int mipmap_idx, int jmin, int jmin_red, int jmax_p_red, float phase_diff,
       float phase_red) const noexcept {
-    ZoneScoped;
     assert(waveform_data_ != nullptr);
     assert(phase_diff < 0);
     const auto prev_phase_red_bar = prev_phase_red_;
@@ -414,7 +408,6 @@ class Oscillator {
       std::array<std::complex<float>, kUpperNumCoeffs>& aligned_array,
       int mipmap_idx, int jmin_red, int jmax_p_red, float phase_diff,
       float phase_red) const noexcept {
-    ZoneScoped;
     assert(waveform_data_ != nullptr);
     const auto prev_phase_red_bar =
         prev_phase_red_ + static_cast<int>(prev_phase_red_ == 0.F);
@@ -427,7 +420,6 @@ class Oscillator {
   }
 
   void processFwd(Span<const float> phases, Span<float> output) {
-    ZoneScoped;
     assert(waveform_data_ != nullptr);
     assert(phases.size() == output.size());
     for (auto&& [phase, output] : iter::zip(phases, output)) {
@@ -442,7 +434,6 @@ class Oscillator {
   }
 
   void processBi(Span<const float> phases, Span<float> output) {
-    ZoneScoped;
     assert(waveform_data_ != nullptr);
     assert(phases.size() == output.size());
     for (auto&& [phase, output] : iter::zip(phases, output)) {
@@ -464,7 +455,6 @@ class Oscillator {
 
   inline void processSampleFwd(float phase, float phase_diff,
                                float& output) noexcept {
-    ZoneScoped;
     assert(phase_diff > 0 && phase_diff <= 0.5);
 
     // Compute mipmap_idx
@@ -559,7 +549,6 @@ class Oscillator {
 
   inline void processSampleBwd(float phase, float phase_diff,
                                float& output) noexcept {
-    ZoneScoped;
     assert(phase_diff < 0 && phase_diff >= -0.5);
 
     // Compute mipmap_idx

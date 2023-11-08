@@ -1,5 +1,4 @@
 include(xsimd)
-include(Tracy)
 
 if(NOT ENABLE_CXX20)
   include(gsl)
@@ -14,23 +13,16 @@ add_library(
 target_include_directories(
   adawata
   PUBLIC ${PROJECT_SOURCE_DIR} ${ITERTOOLS_INSTALL_DIR}/include
-         ${SOXR_INSTALL_DIR}/include ${TRACY_INSTALL_DIR}/include
+         ${SOXR_INSTALL_DIR}/include
 )
 
 target_link_directories(
-  adawata PUBLIC ${SOXR_INSTALL_DIR}/lib ${TRACY_INSTALL_DIR}/lib
+  adawata PUBLIC ${SOXR_INSTALL_DIR}/lib
 )
 
 target_link_libraries(
   adawata
-  PUBLIC soxr
-         xsimd
-         TracyClient
-         $<$<BOOL:${USE_TRACY}>:pthread>
-         $<$<BOOL:${USE_TRACY}>:dl>
-         # $<$<BOOL:${USE_ASAN}>:asan>
-         # $<$<NOT:$<BOOL:${ENABLE_CXX20}>>:"Microsoft\.GSL\:\:GSL">
-         $<$<NOT:$<BOOL:${ENABLE_CXX20}>>:Microsoft.GSL::GSL>
+  PUBLIC soxr xsimd $<$<NOT:$<BOOL:${ENABLE_CXX20}>>:Microsoft.GSL::GSL>
 )
 
 if(ENABLE_CXX20)
@@ -54,4 +46,4 @@ target_link_options(
   adawata PUBLIC $<$<BOOL:${USE_ASAN}>:-fsanitize=address -static-libasan>
 )
 
-add_dependencies(adawata itertools_project soxr_project tracy_project)
+add_dependencies(adawata itertools_project soxr_project)

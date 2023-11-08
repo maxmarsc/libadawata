@@ -1,10 +1,12 @@
 # Milestones
 - [x] Basic SIMD optimization
 - [x] Add C++17 support
-- [ ] Remove Tracy (useless)
+- [x] Remove Tracy (useless)
+- [ ] Added CMake install configuration
+- [ ] Added pkgconfig cmake configuration ?
 - [ ] Documentation
 - [ ] README
 - [ ] Make SOXR dependency optional
-- [ ] Added CMake install configuration
-- [ ] Added pkgconfig cmake configuration ?
+- [ ] Add License
 - [ ] Test arm32 implementation
+- [ ] Add CI/CD

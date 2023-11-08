@@ -8,7 +8,6 @@
 #include <cassert>
 #include <cmath>
 #include <memory>
-// #include <span>
 #include <tuple>
 #include <vector>
 
