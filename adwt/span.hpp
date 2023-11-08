@@ -5,24 +5,22 @@
 
 #pragma once
 
-#if __cplusplus == 201703L
-#include <gsl/span>
-#elif __cplusplus >= 202002L
+/**
+ * @brief GCC 10.2.1 for aarch64 defines __cplusplus = 201709 when enabling C++20
+ * so we can't use __cplusplus to check if C++20 is enabled
+ */
+#ifdef ADWT_ENABLE_CXX20
 #include <span>
 #else
-#error "Unsupported C++ standard"
+#include <gsl/span>
 #endif
 
 namespace adwt {
-
-#if __cplusplus == 201703L
-template <typename T>
-using Span = gsl::span<T>;
-#elif __cplusplus >= 202002L
+#ifdef ADWT_ENABLE_CXX20
 template <typename T, size_t E = std::dynamic_extent>
 using Span = std::span<T, E>;
 #else
-#error "Unsupported C++ standard (<17)"
+template <typename T>
+using Span = gsl::span<T>;
 #endif
-
 }  // namespace adwt

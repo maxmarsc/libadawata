@@ -149,12 +149,9 @@ class Oscillator {
       int mipmap_idx, int idx_prev_bound, int idx_next_bound, float phase_diff,
       float prev_phase_red_bar, float phase_red_bar) const noexcept {
     ZoneScoped;
-    // // Get the span of m & q
-    // auto m_span = waveform_data_->m(crt_waveform_, mipmap_idx);
-    // auto q_span = waveform_data_->q(crt_waveform_, mipmap_idx);
 
     // Get the spans of m & q
-#if __cplusplus == 201703L
+#if !defined(ADWT_ENABLE_CXX20) & defined(NDEBUG)
     // gsl::span performs bound-checking on the [] operator
     const auto* m_span = waveform_data_->m(crt_waveform_, mipmap_idx).data();
     const auto* q_span = waveform_data_->q(crt_waveform_, mipmap_idx).data();
@@ -223,7 +220,7 @@ class Oscillator {
         jmax_p_red + waveform_len * static_cast<int>(jmin_red > jmax_p_red);
 
 // Get the spans
-#if __cplusplus == 201703L
+#if !defined(ADWT_ENABLE_CXX20) & defined(NDEBUG)
     // gsl::span performs bound-checking on the [] operator
     const auto* mdiff_span =
         waveform_data_->mDiff(crt_waveform_, mipmap_idx).data();

@@ -45,6 +45,11 @@ target_compile_options(
   # -fopt-info-vec-optimized -fopt-info-vec-missed
 )
 
+target_compile_definitions(
+  adawata
+  PUBLIC $<$<BOOL:${ENABLE_CXX20}>:ADWT_ENABLE_CXX20>
+)
+
 target_link_options(
   adawata PUBLIC $<$<BOOL:${USE_ASAN}>:-fsanitize=address -static-libasan>
 )

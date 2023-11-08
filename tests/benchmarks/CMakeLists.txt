@@ -21,6 +21,11 @@ target_compile_options(
   PRIVATE -Wall -Wextra
 )
 
+target_compile_definitions(
+  utils_benchmarks
+  PUBLIC $<$<BOOL:${ENABLE_CXX20}>:ADWT_ENABLE_CXX20>
+)
+
 target_link_libraries(
   utils_benchmarks
   PUBLIC adawata
