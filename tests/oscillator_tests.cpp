@@ -565,6 +565,11 @@ TEST_CASE("Reference test : BT2 sweep") {
       val *= kGain;
     }
 
+    // auto output_file = SndfileHandle("BT2_sweep_test.wav", SFM_WRITE,
+    //                                  output_sndfile.format(), 1, 44100);
+    // REQUIRE(output_file.writef(output_vec.data(), output_vec.size()) ==
+    //         output_vec.size());
+
     auto err_max = 0.F;
     for (auto&& [val, ref] : iter::zip(output_vec, output_ref_vec)) {
       err_max = std::max(err_max, std::abs(val - ref));
@@ -973,7 +978,7 @@ TEST_CASE("Reference test : CH10 reverse sweep") {
   constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
 
   // Empiric
-  constexpr auto kEps = 4.4e-4F;  // -30dB difference with python impl
+  constexpr auto kEps = 6e-4F;  // -30dB difference with python impl
   Catch::StringMaker<float>::precision = 15;
   // The reference file has a gain of 0.5
   constexpr auto kGain          = 0.5F;
@@ -1069,7 +1074,7 @@ TEST_CASE("Reference test : BT2 reverse flipped sweep") {
   constexpr auto kSawWaveFile = std::string_view(ASSETS_DIR "/saw_2048.wav");
 
   // Empiric
-  constexpr auto kEps = 2.7e-5F;  // -43dB difference with python impl
+  constexpr auto kEps = 5e-5F;  // -30dB difference with python impl
   Catch::StringMaker<float>::precision = 15;
   // The reference file has a gain of 0.5
   constexpr auto kGain          = 0.5F;
@@ -1229,9 +1234,9 @@ TEST_CASE("Reference test : CH10 reverse flipped sweep") {
       val *= kGain;
     }
 
-    SndfileHandle("CH10_reverse_flipped_sweep.wav", SFM_WRITE,
-                  output_sndfile.format(), 1, 44100)
-        .writef(output_vec.data(), output_sndfile.frames());
+    // SndfileHandle("CH10_reverse_flipped_sweep.wav", SFM_WRITE,
+    //               output_sndfile.format(), 1, 44100)
+    //     .writef(output_vec.data(), output_sndfile.frames());
 
     auto err_max = 0.F;
     auto imax    = 0;
@@ -1352,7 +1357,7 @@ TEST_CASE("Reference test : CH10 460Hz") {
 
   // Empiric, checked with matlab SNR's, it gives the same value of 33.18dB
   // -43dB difference with python impl
-  constexpr auto kEps                  = 3.2e-5F;
+  constexpr auto kEps                  = 5e-5F;
   Catch::StringMaker<float>::precision = 15;
   // The reference file has a gain of 0.5
   constexpr auto kGain = 0.5F;

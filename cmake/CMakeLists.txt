@@ -1,2 +1,2 @@
 include(itertools)
-include(soxr)
+add_subdirectory(libsamplerate)

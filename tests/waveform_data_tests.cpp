@@ -100,6 +100,8 @@ TEST_CASE("Invalid waveform span") {
   auto waveform_data =
       adwt::WaveformData::build(waveforms, num_waveforms, samplerate);
 
+  INFO("waveforms : " << waveform_len * num_waveforms + len_offset);
+  INFO("num_waveforms : " << num_waveforms);
   REQUIRE(waveform_data.get() == nullptr);
 }
 

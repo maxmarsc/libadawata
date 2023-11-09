@@ -306,7 +306,7 @@ class Oscillator {
     const auto cycle_offset = jmin != 0 && jmin_red > jmax_p_red ? -1.F : 0.F;
 
 // Get the spans
-#if __cplusplus == 201703L
+#if !defined(ADWT_ENABLE_CXX20) & defined(NDEBUG)
     // gsl::span performs bound-checking on the [] operator
     const auto* mdiff_span =
         waveform_data_->mDiff(crt_waveform_, mipmap_idx).data();

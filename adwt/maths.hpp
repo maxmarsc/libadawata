@@ -23,6 +23,14 @@ inline constexpr bool isOdd(int value) noexcept {
   return (value % 2) == 1;
 }
 
+inline constexpr bool isPowerOfTwo(int value) noexcept {
+  if (value == 0)
+    return false;
+
+  const auto fvalue = static_cast<float>(value);
+  return ceil(std::log2f(fvalue)) == floor(std::log2f(fvalue));
+}
+
 inline int sign(float value) noexcept {
   if (value == 0.F)
     return 0;

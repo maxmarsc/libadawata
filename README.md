@@ -2,11 +2,12 @@
 - [x] Basic SIMD optimization
 - [x] Add C++17 support
 - [x] Remove Tracy (useless)
+- [x] Replace SOXR with libsamplerate (license issues)
 - [ ] Added CMake install configuration
 - [ ] Added pkgconfig cmake configuration ?
 - [ ] Documentation
 - [ ] README
-- [ ] Make SOXR dependency optional
+- [ ] Make LSR dependency optional
 - [ ] Add License
 - [ ] Test arm32 implementation
 - [ ] Add CI/CD

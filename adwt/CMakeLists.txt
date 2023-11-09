@@ -13,16 +13,12 @@ add_library(
 target_include_directories(
   adawata
   PUBLIC ${PROJECT_SOURCE_DIR} ${ITERTOOLS_INSTALL_DIR}/include
-         ${SOXR_INSTALL_DIR}/include
-)
-
-target_link_directories(
-  adawata PUBLIC ${SOXR_INSTALL_DIR}/lib
 )
 
 target_link_libraries(
   adawata
-  PUBLIC soxr xsimd $<$<NOT:$<BOOL:${ENABLE_CXX20}>>:Microsoft.GSL::GSL>
+  PUBLIC xsimd $<$<NOT:$<BOOL:${ENABLE_CXX20}>>:Microsoft.GSL::GSL>
+         SampleRate::samplerate
 )
 
 if(ENABLE_CXX20)
@@ -46,4 +42,4 @@ target_link_options(
   adawata PUBLIC $<$<BOOL:${USE_ASAN}>:-fsanitize=address -static-libasan>
 )
 
-add_dependencies(adawata itertools_project soxr_project)
+add_dependencies(adawata itertools_project)

@@ -7,10 +7,11 @@
 
 #include <cmath>
 
-#include <soxr.h>
+#include <samplerate.h>
 #include <cppitertools/enumerate.hpp>
 #include <cppitertools/range.hpp>
 #include <iostream>
+#include <numeric>
 
 #include "maths.hpp"
 
@@ -60,14 +61,38 @@ WaveformData::WaveformData(Span<const float> waveforms, int num_waveforms,
     q_diff_[waveform_idx].resize(numMipMapTables());
     computeMQValues(og_waveform, waveform_idx, 0);
 
-    // Compute MQ for each mipmap entry
-    for (auto mipmap_idx : iter::range(1, numMipMapTables())) {
-      auto ratio             = 2 << (mipmap_idx - 1);
-      const auto ds_waveform = downsampleWaveform(og_waveform, ratio);
-      if (ds_waveform.empty())
-        throw std::runtime_error("Downsampled failed");
+    // libsamplerate supports a maximum resampling ratio of 256
+    constexpr auto kMaxLibSamplerate = 8;
+    const auto num_intermediate_tables =
+        std::max(numMipMapTables() - kMaxLibSamplerate - 1, 0);
+    auto intermediate_tables =
+        std::vector<std::vector<float>>(num_intermediate_tables);
 
-      computeMQValues(ds_waveform, waveform_idx, mipmap_idx);
+    // Compute MQ for each mipmap entry
+    for (const auto mipmap_idx : iter::range(1, numMipMapTables())) {
+      if (mipmap_idx <= kMaxLibSamplerate) {
+        auto ratio            = 2 << (mipmap_idx - 1);
+        auto downsampling_src = og_waveform;
+
+        const auto ds_waveform = downsampleWaveform(og_waveform, ratio);
+        if (ds_waveform.empty())
+          throw std::runtime_error("Downsampled failed");
+
+        if (mipmap_idx <= num_intermediate_tables)
+          intermediate_tables[mipmap_idx - 1] = std::move(ds_waveform);
+
+        computeMQValues(ds_waveform, waveform_idx, mipmap_idx);
+      } else {
+        auto ratio            = 256;
+        auto downsampling_src = Span<const float>(
+            intermediate_tables[mipmap_idx - kMaxLibSamplerate - 1]);
+
+        const auto ds_waveform = downsampleWaveform(downsampling_src, ratio);
+        if (ds_waveform.empty())
+          throw std::runtime_error("Downsampled failed");
+
+        computeMQValues(ds_waveform, waveform_idx, mipmap_idx);
+      }
     }
   }
 }
@@ -85,6 +110,10 @@ std::unique_ptr<WaveformData> WaveformData::build(Span<const float> waveforms,
 
   // The waveforms span must contains waveforms of the same length
   if (waveforms.size() % num_waveforms != 0)
+    return nullptr;
+
+  const auto waveform_len = waveforms.size() / num_waveforms;
+  if (!maths::isPowerOfTwo(static_cast<int>(waveform_len)))
     return nullptr;
 
   // can't use make_unique because ctor is private
@@ -200,14 +229,13 @@ void WaveformData::computePhaseVector(int waveform_len, int mipmap_idx) {
 
 std::vector<float> WaveformData::downsampleWaveform(Span<const float> waveform,
                                                     int ratio) {
-  constexpr auto kRepetitions = 3;
+  constexpr auto kRepetitions = 5;
   static_assert(maths::isOdd(kRepetitions));
   const auto in_size  = static_cast<int>(waveform.size());
   const auto out_size = in_size / ratio;
 
-  const auto soxr_quality = soxr_quality_spec(SOXR_VHQ, 0);
+  const auto src_quality = SRC_SINC_BEST_QUALITY;
 
-  // auto result       = std::vector<float>(out_size);
   auto in_multiple  = std::vector<float>(in_size * kRepetitions);
   auto out_multiple = std::vector<float>(out_size * kRepetitions);
 
@@ -218,18 +246,23 @@ std::vector<float> WaveformData::downsampleWaveform(Span<const float> waveform,
   }
 
   // Downsample the multiple waveforms
-  size_t idone           = 0;
-  size_t odone           = 0;
-  const auto* soxr_error = soxr_oneshot(
-      static_cast<double>(ratio), 1.0, 1, in_multiple.data(),
-      in_size * kRepetitions, &idone, out_multiple.data(),
-      out_size * kRepetitions, &odone, nullptr, &soxr_quality, nullptr);
-  if (soxr_error) {
-    std::cerr << soxr_error << std::endl;
+  auto src_data = SRC_DATA{in_multiple.data(),
+                           out_multiple.data(),
+                           static_cast<int64_t>(in_multiple.size()),
+                           static_cast<int64_t>(out_multiple.size()),
+                           0,
+                           0,
+                           0,
+                           1. / static_cast<double>(ratio)};
+  auto src_err  = src_simple(&src_data, src_quality, 1);
+  if (src_err != 0) {
+    std::cerr << src_strerror(src_err) << std::endl;
     return std::vector<float>();
   }
-  if (idone != in_size * kRepetitions || odone != out_size * kRepetitions)
+  if (src_data.input_frames_used != in_multiple.size() ||
+      src_data.output_frames_gen != out_multiple.size()) {
     return std::vector<float>();
+  }
 
   // Copy the center of the output to the result
   auto result       = std::vector<float>(out_size);
