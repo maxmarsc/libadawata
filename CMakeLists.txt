@@ -2,12 +2,14 @@ cmake_minimum_required(VERSION 3.16)
 
 project(libadawata VERSION 0.0.1)
 
+cmake_policy(SET CMP0077 NEW)
+
 # cmake_policy(SET CMP0053 NEW) cmake_policy(SET CMP0010 NEW) cmake_policy(SET
 # CMP0135 NEW) cmake_policy(SET CMP0091 NEW)
 option(BUILD_TESTING "Enable the build of the tests" On)
 option(BUILD_BENCHMARKS
        "Enable the build of the benchmarking binaries. Will force BUILD_TESTING"
-       On
+       Off
 )
 option(
   ENABLE_CXX20

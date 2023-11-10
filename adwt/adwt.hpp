@@ -13,15 +13,15 @@
 #include <memory>
 #include <numeric>
 
-#include "adwt/direction.hpp"
-#include "adwt/filter_type.hpp"
-#include "adwt/maths.hpp"
-#include "adwt/span.hpp"
-#include "adwt/waveform_data.hpp"
-#include "cppitertools/range.hpp"
-
+#include <cppitertools/range.hpp>
 #include <cppitertools/zip.hpp>
 #include <xsimd/xsimd.hpp>
+
+#include "direction.hpp"
+#include "filter_type.hpp"
+#include "maths.hpp"
+#include "span.hpp"
+#include "waveform_data.hpp"
 
 namespace xs = xsimd;
 

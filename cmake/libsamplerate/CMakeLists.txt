@@ -1,6 +1,6 @@
 include(FetchContent)
 
-set(LIBSAMPLERATE_EXAMPLES OFF)
+# set(LIBSAMPLERATE_EXAMPLES OFF)
 set(BUILD_TESTING OFF)
 FetchContent_Declare(
   libsamplerate

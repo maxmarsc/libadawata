@@ -11,7 +11,7 @@
 #include <tuple>
 #include <vector>
 
-#include "adwt/span.hpp"
+#include "span.hpp"
 
 namespace adwt {
 
