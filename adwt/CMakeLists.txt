@@ -76,6 +76,16 @@ install(FILES ${ITERTOOLS_INSTALL_DIR}/include/cppitertools/range.hpp
         DESTINATION include/cppitertools
 )
 
+install(
+  TARGETS samplerate
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES
+  DESTINATION include
+  PUBLIC_HEADER DESTINATION include
+)
+
 if(NOT ENABLE_CXX20)
   install(
     FILES ${GSL_SOURCE_DIR}/include/gsl/span ${GSL_SOURCE_DIR}/include/gsl/byte
