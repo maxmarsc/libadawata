@@ -3,8 +3,8 @@
 - [x] Add C++17 support
 - [x] Remove Tracy (useless)
 - [x] Replace SOXR with libsamplerate (license issues)
-- [ ] Added CMake install configuration
-- [ ] Add a BUILD_SHARED_LIBS option
+- [x] Added CMake install configuration
+- [ ] Check BUILD_SHARED_LIBS option
 - [ ] Added pkgconfig cmake configuration ?
 - [ ] Documentation
 - [ ] README
