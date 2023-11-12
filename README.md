@@ -154,15 +154,15 @@ but keep in mind this is a hobby project.
 - [ ] (planned) Test arm32 implementation
 - [ ] (planned) Add CI/CD
 - [ ] (planned) Use Github pages for documentation
-- [ ] Add more benchmarks
-- [ ] Find better unit tests, stop using reference tests from python implementation
+- [ ] (planned) Add more benchmarks
+- [ ] (planned) Find better unit tests, stop using reference tests from python implementation
 
 ## R&D
 This code was developed based on the python experimentations I made, which you can
 find [here](https://github.com/maxmarsc/ADAA_wavetable/)
 
 ## Contact
-If you wan't to discuss about it you can open an issue or you can find me on :
+If you want to discuss about it you can open an issue or you can find me on :
 - [Discord](https://discordapp.com/users/Groumpf#2353)
 - [Twitter](https://twitter.com/Groumpf_)
 - [Mastodon](https://piaille.fr/@groumpf)
