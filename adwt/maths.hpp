@@ -51,25 +51,4 @@ inline constexpr T reduce(T value, T threshold) noexcept {
   return value;
 }
 
-constexpr auto kTest  = reduce(1, 2);
-constexpr auto kTest2 = reduce(1.5F, 1.F);
-
-// inline constexpr float reducef(float value, float threshold) {
-//   if (value >= threshold)
-// }
-
-// template <typename T, T Threshold>
-// inline constexpr T reduce(T value) {
-//   static_assert(std::is_arithmetic_v<T>);
-//   static_assert(Threshold > T());
-//   assert(std::abs(value) < 2 * Threshold);
-//   if (value > Threshold) {
-//     return value - Threshold;
-//   }
-//   if (value < Threshold) {
-//     return value + Threshold;
-//   }
-//   return value;
-// }
-
 }  // namespace adwt::maths

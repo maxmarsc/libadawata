@@ -27,8 +27,185 @@ namespace xs = xsimd;
 
 namespace adwt {
 
+/**
+ * @brief The main class of the library. This Oscillator class implement real-time
+ * ADAA-IIR.
+ *
+ * This implementation supports waveform with sizes of power of two, and should be
+ * feeded with phase values within [0:1).
+ *
+ * It has limitations on how fast the frequency of the signal can vary. Too fast
+ * of a variation would not make the implementation crash, but might introduce 
+ * audio "clicks" due to unattenuated jumps in harmonics.
+ *
+ * Anti-Derivative Anti-Aliasing (ADAA) is an "new" anti-aliasing technique. This
+ * implementation is based on the work of Leonardo Gabriellin, Stefano D'Angelo,
+ * Pier Paolo La Pastina and Stefano Squartini : 
+ *
+ * "Antiderivative Antialiasing for Arbitrary Waveform Generation" - August 2022
+ * https://www.researchgate.net/publication/362628103_Antiderivative_Antialiasing_for_Arbitrary_Waveform_Generation
+ * 
+ * With 256-bits SIMD filters of orders up to 16 can be used with approximately
+ * the same computation time.
+ * With 128-bits SIMD filters of orders up to 16 can be used with approximately
+ * the same computation time.
+ *
+ * @tparam Ftype The type of anti-aliasing filter to use. See @file filter_type.hpp
+ */
 template <FilterType Ftype>
 class Oscillator {
+  //============================================================================
+  //                                INTERFACE
+  //============================================================================
+ public:
+  /**
+  * @brief Default constructor. The user must call @ref init() before use, in order to
+  * load a waveform
+  */
+  Oscillator()
+      : wavetable_(nullptr),
+        r_array_(rArray()),
+        z_array_(zArray()),
+        z_pow2_array_(zPow2Array()),
+        exp_z_array_(expZArray()) {}
+
+  //============================================================================
+  /**
+   * @brief Load a waveform in the oscillator.
+   *
+   * @note This should only be called once. To change a loaded waveform the user
+   * shall call @ref swapWaveforms
+   * 
+   * @param waveform_data A WaveformData object to load. The Oscillator object will
+   * take the handle of the pointer.
+   * @param init_state A optionnal init tuple to set both previous phase and phase_diff
+   * values (because this is a recursive algorithm). Once initialized, the user
+   * can reset again these values at any time by calling @ref resetInternals()
+   * @return int 0 on success
+   */
+  [[nodiscard]] int init(
+      std::unique_ptr<WaveformData>&& waveform_data,
+      std::tuple<float, float> init_state = std::make_tuple(0.F, 0.4F)) {
+    assert(waveform_data_ == nullptr);
+    if (waveform_data == nullptr)
+      return 1;
+    wavetable_ = std::move(waveform_data);
+    resetInternals(std::get<0>(init_state), std::get<1>(init_state));
+    crt_waveform_ = 0;
+    return 0;
+  }
+
+  /**
+   * @brief Swap the current loaded waveform with a new one.
+   * 
+   * @param waveform_data A WaveformData object to load. The Oscillator object will
+   * take the handle of the pointer.
+   * @param init_state A optionnal init tuple to set both previous phase and phase_diff
+   * values (because this is a recursive algorithm). Once initialized, the user
+   * can reset again these values at any time by calling @ref resetInternals()
+   * @return std::unique_ptr<WaveformData> 
+   */
+  [[nodiscard]] std::unique_ptr<WaveformData> swapWaveforms(
+      std::unique_ptr<WaveformData>&& waveform_data,
+      std::tuple<float, float> init_state = std::make_tuple(0.F, 0.4F)) {
+    assert(waveform_data_ != nullptr);
+    auto waveform_data_ptr = std::move(waveform_data);
+    if (waveform_data_ptr == nullptr)
+      return nullptr;
+    waveform_data_ptr.swap(wavetable_);
+    resetInternals(std::get<0>(init_state), std::get<1>(init_state));
+    crt_waveform_ = 0;
+    return waveform_data_ptr;
+  }
+
+  /**
+   * @brief Reset the previous phase and phase_diff values. Usefull when the user
+   * want to suddenly change the frequency of the signal. The caller is responsible
+   * for any necessary cross-fading.
+   * 
+   * @param init_phase The new previous phase value to set
+   * @param init_phase_diff The new previous phase_diff value to set
+   */
+  void resetInternals(float init_phase, float init_phase_diff) {
+    assert(waveform_data_ != nullptr);
+    prev_cpx_y_array_ = std::array<std::complex<float>, kNumCoeffs>{};
+    prev_phase_       = init_phase;
+    prev_phase_red_   = maths::reduce(init_phase, 1.F);
+    prev_phase_diff_  = init_phase_diff;
+    prev_mipmap_idx_ =
+        std::get<0>(wavetable_->findMipMapIndexes(std::fabs(init_phase_diff)));
+    const auto waveform_len = wavetable_->waveformLen(prev_mipmap_idx_);
+
+    if (init_phase_diff >= 0) {
+      j_red_ = maths::floor(prev_phase_red_ * waveform_len);
+    } else {
+      j_red_ = maths::ceil(prev_phase_red_ * waveform_len);
+    }
+  }
+
+  //============================================================================
+  /**
+   * @brief Generate a waveform signal according to the given phase values
+   * 
+   * @tparam Dir Can be set to kForward if you know your signal will only be played
+   * in the forward direction. It can slightly improve speed and binary size
+   * @param phases A span of phases values of the waveform samples to produce
+   * @param output A span to store the produced waveform samples. Its size must
+   * match the phases span's size.
+   */
+  template <Direction Dir = Direction::kBidirectionnal>
+  inline void process(Span<const float> phases, Span<float> output) {
+    if constexpr (Dir == Direction::kForward) {
+      processFwd(phases, output);
+    } else {
+      processBi(phases, output);
+    }
+  }
+
+  //============================================================================
+  /**
+   * @brief The number of waveforms in the loaded wavetable
+   */
+  [[nodiscard]] inline int numWaveforms() const noexcept {
+    assert(waveform_data_ != nullptr);
+    return wavetable_->numWaveforms();
+  }
+  /**
+   * @brief The index of the current waveform in the loaded wavetable
+   */
+  [[nodiscard]] inline int crtWaveform() const noexcept {
+    assert(waveform_data_ != nullptr);
+    return crt_waveform_;
+  }
+  /**
+   * @brief Set the waveform to use from the loaded wavetable
+   * @note The caller is responsible for any cross-fading necessary to attenuate
+   * audio "clicks" due to jumps in harmonics.
+   */
+  inline void setWaveform(int waveform_idx) noexcept {
+    assert(waveform_data_ != nullptr);
+    crt_waveform_ = waveform_idx;
+  }
+  /**
+   * @brief Ratios to help compute an estimation of the frequency variation limitation
+   * induced by the cross-fading implementation.
+   *
+   * This function returns [min, max]. Given your previous phase_diff value :
+   *  - min * phase_diff : the next minimum phase_diff you should be able to use
+   * without introducing audio "clicks"
+   * - max * phase_diff : the next maximum phase_diff you should be able to use
+   * without introducing audio "clicks"
+   */
+  [[nodiscard]] inline std::tuple<float, float> minMaxPhaseDiffRatio()
+      const noexcept {
+    assert(waveform_data_ != nullptr);
+    return wavetable_->minMaxPhaseDiffRatio();
+  };
+
+  //============================================================================
+  //                         IMPLEMENTATION DETAILS
+  //============================================================================
+ private:
   using CpxBatch                   = xs::batch<std::complex<float>>;
   static constexpr auto kBatchSize = CpxBatch::size;
 
@@ -39,6 +216,10 @@ class Oscillator {
    */
   static constexpr auto kBatchThreshold = 1;
 
+  /**
+   * @brief Computes the upper number of coeffs to actually use in order to
+   * perfectly fits SIMD registers
+   */
   static constexpr std::size_t computeUpperNumCoeffs() {
     constexpr auto kNumCoeffs = numCoeffs<Ftype>();
     static_assert(kBatchSize != 0);
@@ -61,87 +242,22 @@ class Oscillator {
   static constexpr auto kWholeSize      = kNumCoeffs - kPartialSize;
 
  public:
-  //============================================================================
-  Oscillator()
-      : waveform_data_(nullptr),
-        r_array_(rArray()),
-        z_array_(zArray()),
-        z_pow2_array_(zPow2Array()),
-        exp_z_array_(expZArray()) {}
-
-  //============================================================================
-  [[nodiscard]] int init(
-      std::unique_ptr<WaveformData>&& waveform_data,
-      std::tuple<float, float> init_state = std::make_tuple(0.F, 0.4F)) {
-    assert(waveform_data_ == nullptr);
-    if (waveform_data == nullptr)
-      return 1;
-    waveform_data_ = std::move(waveform_data);
-    resetInternals(std::get<0>(init_state), std::get<1>(init_state));
-    crt_waveform_ = 0;
-    return 0;
-  }
-  [[nodiscard]] std::unique_ptr<WaveformData> swapWaveforms(
-      std::unique_ptr<WaveformData>&& waveform_data,
-      std::tuple<float, float> init_state = std::make_tuple(0.F, 0.4F)) {
-    assert(waveform_data_ != nullptr);
-    auto waveform_data_ptr = std::move(waveform_data);
-    if (waveform_data_ptr == nullptr)
-      return nullptr;
-    waveform_data_ptr.swap(waveform_data_);
-    resetInternals(std::get<0>(init_state), std::get<1>(init_state));
-    crt_waveform_ = 0;
-    return waveform_data_ptr;
-  }
-
-  //============================================================================
-  template <Direction Dir>
-  inline void process(Span<const float> phases, Span<float> output) {
-    if constexpr (Dir == Direction::kForward) {
-      processFwd(phases, output);
-    } else {
-      processBi(phases, output);
-    }
-  }
-
-  //============================================================================
-  [[nodiscard]] inline int numWaveforms() const noexcept {
-    assert(waveform_data_ != nullptr);
-    return waveform_data_->numWaveforms();
-  }
-  [[nodiscard]] inline int crtWaveform() const noexcept {
-    assert(waveform_data_ != nullptr);
-    return crt_waveform_;
-  }
-  inline void setWaveform(int waveform_idx) noexcept {
-    assert(waveform_data_ != nullptr);
-    crt_waveform_ = waveform_idx;
-  }
-  [[nodiscard]] inline std::tuple<float, float> minMaxPhaseDiffRatio()
-      const noexcept {
-    assert(waveform_data_ != nullptr);
-    return waveform_data_->minMaxPhaseDiffRatio();
-  };
-
  private:
   //============================================================================
-  void resetInternals(float init_phase, float init_phase_diff) {
-    assert(waveform_data_ != nullptr);
-    prev_cpx_y_array_ = std::array<std::complex<float>, kNumCoeffs>{};
-    prev_phase_       = init_phase;
-    prev_phase_red_   = maths::reduce(init_phase, 1.F);
-    prev_phase_diff_  = init_phase_diff;
-    prev_mipmap_idx_  = std::get<0>(
-        waveform_data_->findMipMapIndexes(std::fabs(init_phase_diff)));
-    const auto waveform_len = waveform_data_->waveformLen(prev_mipmap_idx_);
-
-    if (init_phase_diff >= 0) {
-      j_red_ = maths::floor(prev_phase_red_ * waveform_len);
-    } else {
-      j_red_ = maths::ceil(prev_phase_red_ * waveform_len);
-    }
-  }
-
+  /**
+   * @brief Compute the first part of the I member of the algorithm.
+   * 
+   * @param aligned_array Where to store the result. The content will be overwritten
+   * @param mipmap_idx The mipmap idx to use for computation
+   * @param idx_prev_bound Should correspond to the first waveform sample index
+   * after the previously generated output sample
+   * @param idx_next_bound Should correspond to the first waveform sample index
+   * after the newly generated output sample
+   * @param phase_diff The phase difference between the new output sample and the
+   * previous output sample
+   * @param prev_phase_red_bar TODO: find a proper way to explain
+   * @param phase_red_bar TODO: find a proper way to explain
+   */
   inline void computeI0(
       std::array<std::complex<float>, kUpperNumCoeffs>& aligned_array,
       int mipmap_idx, int idx_prev_bound, int idx_next_bound, float phase_diff,
@@ -153,8 +269,8 @@ class Oscillator {
     const auto* m_span = waveform_data_->m(crt_waveform_, mipmap_idx).data();
     const auto* q_span = waveform_data_->q(crt_waveform_, mipmap_idx).data();
 #else
-    auto m_span     = waveform_data_->m(crt_waveform_, mipmap_idx);
-    auto q_span     = waveform_data_->q(crt_waveform_, mipmap_idx);
+    auto m_span     = wavetable_->m(crt_waveform_, mipmap_idx);
+    auto q_span     = wavetable_->q(crt_waveform_, mipmap_idx);
 #endif
 
     // Compute the recurrent parts of I_0
@@ -207,11 +323,23 @@ class Oscillator {
     }
   }
 
+  /**
+   * @brief Computes the forward version of the second part of the I member.
+   * 
+   * @param aligned_array Where to add the result. The caller must make sure
+   * it contains the result of the previously computed I0 part
+   * @param mipmap_idx The mipmap idx to use for computation
+   * @param jmin_red Reduce version of the index jmin
+   * @param jmax_p_red Reduce version of the index jmax + 1
+   * @param phase_diff The phase difference between the new output sample and the
+   * previous output sample
+   * @param phase_red Reduce version of the new phase value
+   */
   inline void computeISumFwd(
       std::array<std::complex<float>, kUpperNumCoeffs>& aligned_array,
       int mipmap_idx, int jmin_red, int jmax_p_red, float phase_diff,
       float phase_red) const noexcept {
-    const auto waveform_len = waveform_data_->waveformLen(mipmap_idx);
+    const auto waveform_len = wavetable_->waveformLen(mipmap_idx);
     const auto born_sup =
         jmax_p_red + waveform_len * static_cast<int>(jmin_red > jmax_p_red);
 
@@ -224,9 +352,9 @@ class Oscillator {
         waveform_data_->qDiff(crt_waveform_, mipmap_idx).data();
     const auto* phase_span = waveform_data_->phases(mipmap_idx).data();
 #else
-    auto mdiff_span = waveform_data_->mDiff(crt_waveform_, mipmap_idx);
-    auto qdiff_span = waveform_data_->qDiff(crt_waveform_, mipmap_idx);
-    auto phase_span = waveform_data_->phases(mipmap_idx);
+    auto mdiff_span = wavetable_->mDiff(crt_waveform_, mipmap_idx);
+    auto qdiff_span = wavetable_->qDiff(crt_waveform_, mipmap_idx);
+    auto phase_span = wavetable_->phases(mipmap_idx);
 #endif
 
     // Compute the array of I_sum
@@ -295,12 +423,25 @@ class Oscillator {
     }
   }
 
+  /**
+   * @brief Computes the backward version of the second part of the I member.
+   * 
+   * @param aligned_array Where to add the result. The caller must make sure
+   * it contains the result of the previously computed I0 part
+   * @param mipmap_idx The mipmap idx to use for computation
+   * @param jmin The index jmin
+   * @param jmin_red Reduce version of the index jmin
+   * @param jmax_p_red Reduce version of the index jmax + 1
+   * @param phase_diff The phase difference between the new output sample and the
+   * previous output sample
+   * @param phase_red Reduce version of the new phase value
+   */
   inline void computeISumBwd(
       std::array<std::complex<float>, kUpperNumCoeffs>& aligned_array,
       int mipmap_idx, int jmin, int jmin_red, int jmax_p_red, float phase_diff,
       float phase_red) const noexcept {
     assert(phase_diff < 0);
-    const auto waveform_len = waveform_data_->waveformLen(mipmap_idx);
+    const auto waveform_len = wavetable_->waveformLen(mipmap_idx);
     const auto born_sup =
         jmax_p_red + waveform_len * static_cast<int>(jmin_red > jmax_p_red);
     const auto cycle_offset = jmin != 0 && jmin_red > jmax_p_red ? -1.F : 0.F;
@@ -314,9 +455,9 @@ class Oscillator {
         waveform_data_->qDiff(crt_waveform_, mipmap_idx).data();
     const auto* phase_span = waveform_data_->phases(mipmap_idx).data();
 #else
-    auto mdiff_span = waveform_data_->mDiff(crt_waveform_, mipmap_idx);
-    auto qdiff_span = waveform_data_->qDiff(crt_waveform_, mipmap_idx);
-    auto phase_span = waveform_data_->phases(mipmap_idx);
+    auto mdiff_span = wavetable_->mDiff(crt_waveform_, mipmap_idx);
+    auto qdiff_span = wavetable_->qDiff(crt_waveform_, mipmap_idx);
+    auto phase_span = wavetable_->phases(mipmap_idx);
 #endif
 
     // Compute the array of I_sum
@@ -384,6 +525,18 @@ class Oscillator {
     }
   }
 
+  /**
+   * @brief Computes the backward version of the I member
+   * 
+   * @param aligned_array Where to store the result. The content will be overwritten
+   * @param mipmap_idx The mipmap idx to use for computation
+   * @param jmin The index jmin
+   * @param jmin_red Reduce version of the index jmin
+   * @param jmax_p_red Reduce version of the index jmax + 1
+   * @param phase_diff The phase difference between the new output sample and the
+   * previous output sample
+   * @param phase_red Reduce version of the new phase value
+   */
   void computeBwdI(
       std::array<std::complex<float>, kUpperNumCoeffs>& aligned_array,
       int mipmap_idx, int jmin, int jmin_red, int jmax_p_red, float phase_diff,
@@ -400,10 +553,19 @@ class Oscillator {
     // Compute I_sum
     computeISumBwd(aligned_array, mipmap_idx, jmin, jmin_red, jmax_p_red,
                    phase_diff, phase_red);
-
-    // return i_array;
   }
 
+  /**
+   * @brief Computes the forward version of the I member
+   * 
+   * @param aligned_array Where to store the result. The content will be overwritten
+   * @param mipmap_idx The mipmap idx to use for computation
+   * @param jmin_red Reduce version of the index jmin
+   * @param jmax_p_red Reduce version of the index jmax + 1
+   * @param phase_diff The phase difference between the new output sample and the
+   * previous output sample
+   * @param phase_red Reduce version of the new phase value
+   */
   void computeFwdI(
       std::array<std::complex<float>, kUpperNumCoeffs>& aligned_array,
       int mipmap_idx, int jmin_red, int jmax_p_red, float phase_diff,
@@ -419,6 +581,9 @@ class Oscillator {
                    phase_red);
   }
 
+  /**
+   * @brief Forward-only processing of a span of values
+   */
   void processFwd(Span<const float> phases, Span<float> output) {
     assert(waveform_data_ != nullptr);
     assert(phases.size() == output.size());
@@ -433,6 +598,9 @@ class Oscillator {
     }
   }
 
+  /**
+   * @brief Bidirectionnal processing of an entire span of values
+   */
   void processBi(Span<const float> phases, Span<float> output) {
     assert(waveform_data_ != nullptr);
     assert(phases.size() == output.size());
@@ -453,17 +621,24 @@ class Oscillator {
     }
   }
 
+  /**
+   * @brief Forward-only processing of a new output value
+   * 
+   * @param phase The phase of the new value
+   * @param phase_diff The phase diff with the previous value
+   * @param output Where to store the result
+   */
   inline void processSampleFwd(float phase, float phase_diff,
                                float& output) noexcept {
     assert(phase_diff > 0 && phase_diff <= 0.5);
 
     // Compute mipmap_idx
     const auto&& [mipmap_idx, mipmap_weight, mipmap_idx_up, mipmap_weight_up] =
-        waveform_data_->findMipMapIndexes(phase_diff);
+        wavetable_->findMipMapIndexes(phase_diff);
 
-    auto phase_span         = waveform_data_->phases(mipmap_idx);
+    auto phase_span         = wavetable_->phases(mipmap_idx);
     const auto phase_red    = maths::reduce(phase, 1.F);
-    const auto waveform_len = waveform_data_->waveformLen(mipmap_idx);
+    const auto waveform_len = wavetable_->waveformLen(mipmap_idx);
 
     // Adjust j_red_ if  changing mipmap table
     // "Optimized version" (need benchmark) => shitty output for step over the octave range
@@ -547,17 +722,24 @@ class Oscillator {
     prev_mipmap_idx_  = mipmap_idx;
   }
 
+  /**
+   * @brief Backward-only processing of a new output value
+   * 
+   * @param phase The phase of the new value
+   * @param phase_diff The phase diff with the previous value
+   * @param output Where to store the result
+   */
   inline void processSampleBwd(float phase, float phase_diff,
                                float& output) noexcept {
     assert(phase_diff < 0 && phase_diff >= -0.5);
 
     // Compute mipmap_idx
     const auto&& [mipmap_idx, mipmap_weight, mipmap_idx_up, mipmap_weight_up] =
-        waveform_data_->findMipMapIndexes(std::fabs(phase_diff));
+        wavetable_->findMipMapIndexes(std::fabs(phase_diff));
 
-    auto phase_span         = waveform_data_->phases(mipmap_idx);
+    auto phase_span         = wavetable_->phases(mipmap_idx);
     const auto phase_red    = maths::reduce(phase, 1.F);
-    const auto waveform_len = waveform_data_->waveformLen(mipmap_idx);
+    const auto waveform_len = wavetable_->waveformLen(mipmap_idx);
 
     // Adjust j_red_ if  changing mipmap table
     // "Optimized version" (need benchmark) => shitty output for step over the octave range
@@ -686,7 +868,10 @@ class Oscillator {
   }
 
   //============================================================================
-  std::unique_ptr<WaveformData> waveform_data_;
+  // The currently loaded wavetable
+  std::unique_ptr<WaveformData> wavetable_;
+
+  // Filter coefficients
   alignas(kAligment)
       const std::array<std::complex<float>, kUpperNumCoeffs> r_array_;
   alignas(kAligment)
@@ -695,6 +880,8 @@ class Oscillator {
       const std::array<std::complex<float>, kUpperNumCoeffs> z_pow2_array_;
   alignas(kAligment)
       const std::array<std::complex<float>, kUpperNumCoeffs> exp_z_array_;
+
+  // Storage for the recursive part of the algorithm
   std::array<std::complex<float>, kNumCoeffs> prev_cpx_y_array_{};
   float prev_phase_{};
   float prev_phase_red_{};
@@ -702,6 +889,8 @@ class Oscillator {
   int prev_mipmap_idx_{};
   int j_red_{};
   int prev_j_red_{};
+
+  // Currently selected waveform in the wavetable
   int crt_waveform_{};
 };
 
