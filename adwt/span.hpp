@@ -6,6 +6,13 @@
 #pragma once
 
 /**
+ * @brief In C++17 mode we use GSL's span implementation. Be aware it performs bound checking
+ * with the [] operator. It might be better to use a ptr for critical performances
+ * parts.
+ * 
+ */
+
+/**
  * @brief GCC 10.2.1 for aarch64 defines __cplusplus = 201709 when enabling C++20
  * so we can't use __cplusplus to check if C++20 is enabled
  */

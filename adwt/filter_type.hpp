@@ -11,6 +11,45 @@
 
 namespace adwt {
 
+/**
+ * @brief Defines the different filters available for the Oscillator class
+ *
+ * The order of the filters are only even numbers, to use the fact that complex poles
+ * filters of successive orders are complex conjugated.
+ *
+ * With 256-bits SIMD filters of orders up to 16 can be used with approximately
+ * the same computation time.
+ * With 128-bits SIMD filters of orders up to 16 can be used with approximately
+ * the same computation time.
+ *
+ * For now only experimental filters are available, derived from the resarch
+ * paper https://www.researchgate.net/publication/362628103_Antiderivative_Antialiasing_for_Arbitrary_Waveform_Generation
+ * 
+ * Here is an example, using Scipy (Python), on how to add a new filter (here a butteworth filter)
+ * 
+ * 1. Compute the residues and poles values
+ * 
+ * ..  code-block:: py
+ *    from scipy.signal import (
+ *        butter,
+ *        residue,
+ *        zpk2tf,
+ *        )
+ *    ang_freq = 2 * np.pi * ctf / samplerate
+ *    (z, p, k) = butter(order, ang_freq, output="zpk", analog=True)
+ *    (b, a) = zpk2tf(z, p, k)
+ *    (r, p, _) = residue(b, a)
+ * 
+ * 
+ * 2. Create a new filter type
+ * Add a new value in the @ref FilterType enum
+ *
+ * 3. Fill the new filter coefficients values
+ * Specialize the @ref r() & @ref p() functions with the residude and poles values
+ * of you new filter. You should only add half the values returned by the scipy code,
+ * only the even-indexed one (0, 2, 4, ...)
+ * 
+ */
 enum class FilterType {
   kType1,  // Butteworth order 2, cutoff at 0.45*samplerate
   kType2,  // Chebyshev type 2 order 10, cutoff at 0.61*samplerate
@@ -27,9 +66,17 @@ constexpr std::size_t numCoeffs();
 template <FilterType Ftype>
 using CoeffArray = std::array<std::complex<float>, numCoeffs<Ftype>()>;
 
+/**
+ * @brief Function to specialize with the residue coefficients of your filter when creating
+ * a new filter
+ */
 template <FilterType Ftype>
 constexpr auto r();
 
+/**
+ * @brief Function to specialize with the pole coefficients of your filter when creating
+ * a new filter
+ */
 template <FilterType Ftype>
 constexpr auto z();
 
@@ -134,11 +181,5 @@ template <FilterType Ftype>
 constexpr std::size_t numCoeffs() {
   return r<Ftype>().size();
 }
-
-constexpr auto kTest  = numCoeffs<FilterType::kType1>();
-constexpr auto kTest2 = r<FilterType::kType1>();
-constexpr auto kTest3 = z<FilterType::kType1>();
-const auto kTest4     = zPow2<FilterType::kType1>();
-const auto kTest5     = zExp<FilterType::kType1>();
 
 }  // namespace adwt

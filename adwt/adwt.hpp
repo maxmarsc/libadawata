@@ -32,7 +32,7 @@ namespace adwt {
  * ADAA-IIR.
  *
  * This implementation supports waveform with sizes of power of two, and should be
- * feeded with phase values within [0:1).
+ * feeded with phase values within [0:1)
  *
  * It has limitations on how fast the frequency of the signal can vary. Too fast
  * of a variation would not make the implementation crash, but might introduce 
@@ -44,11 +44,6 @@ namespace adwt {
  *
  * "Antiderivative Antialiasing for Arbitrary Waveform Generation" - August 2022
  * https://www.researchgate.net/publication/362628103_Antiderivative_Antialiasing_for_Arbitrary_Waveform_Generation
- * 
- * With 256-bits SIMD filters of orders up to 16 can be used with approximately
- * the same computation time.
- * With 128-bits SIMD filters of orders up to 16 can be used with approximately
- * the same computation time.
  *
  * @tparam Ftype The type of anti-aliasing filter to use. See @file filter_type.hpp
  */
@@ -133,7 +128,7 @@ class Oscillator {
     prev_phase_red_   = maths::reduce(init_phase, 1.F);
     prev_phase_diff_  = init_phase_diff;
     prev_mipmap_idx_ =
-        std::get<0>(wavetable_->findMipMapIndexes(std::fabs(init_phase_diff)));
+        std::get<0>(wavetable_->findMipMapIndices(std::fabs(init_phase_diff)));
     const auto waveform_len = wavetable_->waveformLen(prev_mipmap_idx_);
 
     if (init_phase_diff >= 0) {
@@ -634,7 +629,7 @@ class Oscillator {
 
     // Compute mipmap_idx
     const auto&& [mipmap_idx, mipmap_weight, mipmap_idx_up, mipmap_weight_up] =
-        wavetable_->findMipMapIndexes(phase_diff);
+        wavetable_->findMipMapIndices(phase_diff);
 
     auto phase_span         = wavetable_->phases(mipmap_idx);
     const auto phase_red    = maths::reduce(phase, 1.F);
@@ -661,7 +656,7 @@ class Oscillator {
       prev_j_red_ = j_red_ + maths::sign(prev_phase_red_ - phase_span[j_red_]);
     }
 
-    // Compute edge indexes
+    // Compute edge indices
     j_red_                = maths::floor(phase_red * waveform_len);
     const auto jmax       = j_red_;
     const auto jmin       = prev_j_red_;
@@ -735,7 +730,7 @@ class Oscillator {
 
     // Compute mipmap_idx
     const auto&& [mipmap_idx, mipmap_weight, mipmap_idx_up, mipmap_weight_up] =
-        wavetable_->findMipMapIndexes(std::fabs(phase_diff));
+        wavetable_->findMipMapIndices(std::fabs(phase_diff));
 
     auto phase_span         = wavetable_->phases(mipmap_idx);
     const auto phase_red    = maths::reduce(phase, 1.F);
@@ -777,7 +772,7 @@ class Oscillator {
     auto jmax = prev_j_red_;
     auto jmin = j_red_;
 
-    // Compute edge indexes
+    // Compute edge indices
     const auto jmin_red   = maths::reduce(jmin - 1, waveform_len);
     const auto jmax_p_red = maths::reduce(jmax, waveform_len);
 

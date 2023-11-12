@@ -124,7 +124,7 @@ std::unique_ptr<WaveformData> WaveformData::build(Span<const float> waveforms,
 }
 
 //==============================================================================
-[[nodiscard]] WaveformData::MipMapIndexes WaveformData::findMipMapIndexes(
+[[nodiscard]] WaveformData::MipMapIndices WaveformData::findMipMapIndices(
     float abs_phase_diff) const noexcept {
   assert(abs_phase_diff != 0);
   // constexpr auto kThresholdRatio = 0.99F;

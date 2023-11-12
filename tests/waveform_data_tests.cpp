@@ -67,7 +67,7 @@ TEST_CASE("Valid build") {
     const auto abs_phase_diff = rng.get();
 
     auto&& [crt_idx, crt_weight, nxt_idx, nxt_weight] =
-        waveform_data->findMipMapIndexes(abs_phase_diff);
+        waveform_data->findMipMapIndices(abs_phase_diff);
 
     INFO("phase_diff : " << abs_phase_diff);
     REQUIRE(crt_weight + nxt_weight == 1.0F);

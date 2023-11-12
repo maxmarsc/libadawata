@@ -4,12 +4,14 @@
 - [x] Remove Tracy (useless)
 - [x] Replace SOXR with libsamplerate (license issues)
 - [x] Added CMake install configuration
+- [x] Documentation
 - [ ] Add License
-- [ ] Documentation
 - [ ] README
+- [ ] Add Sphinx documentation generation
 - [ ] Check BUILD_SHARED_LIBS option
 - [ ] Use FetchContent for libsndfile
 - [ ] Added pkgconfig cmake configuration ?
 - [ ] Make LSR dependency optional
 - [ ] Test arm32 implementation
 - [ ] Add CI/CD
+- [ ] Use Github pages for documentation

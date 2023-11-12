@@ -15,53 +15,136 @@
 
 namespace adwt {
 
+/**
+ * @brief Compute and holds the data of a wavetable to be used by an oscillator
+ *
+ * The interface of this class allows the creation of a wavetable through an unique
+ * ptr, which can then be passed to an oscillator instance.
+ */
 class WaveformData {
   //============================================================================
   WaveformData(Span<const float> waveforms, int num_waveforms, int samplerate,
                float mipmap_ratio);
 
  public:
-  using MipMapIndexes = std::tuple<int, float, int, float>;
+  /**
+   * @brief 4-values tuples on how to cross-fade
+   * 0: The lowest mipmap idx to use
+   * 1: The highest mipmap idx to use
+   * 2: The gain [0:1] to apply to the mipmap entry of 0
+   * 3: The gain [0:1] to apply to the mipmap entry of 1
+   * 
+   */
+  using MipMapIndices = std::tuple<int, float, int, float>;
 
+  /**
+   * @brief Builds a new WaveformData instance for a given wavetable
+   * 
+   * @note When using a wavetable with non negligeable harmonics differences
+   * between waveforms in the wavetable, the caller is responsible for any cross-fading
+   * necessary to attenuate audio "clicks" due to jumps in harmonics when updating
+   * which waveform to use in the wavetable.
+   *
+   * @param waveforms A span containing all the waveforms in the wavetable, stored
+   * contiguously. They must all be of the same size, which must be a power of 
+   * two (maximum 256²)
+   * @param num_waveforms The number of waveforms in the wavetable
+   * @param samplerate The samplerate at which this waveform is going to be played
+   * (needed for mipmapping cross-fading settings)
+   * @param mipmap_ratio Ratio (0:1) of each octave that will be cross-faded with
+   * the lowest octave
+   */
   static std::unique_ptr<WaveformData> build(Span<const float> waveforms,
                                              int num_waveforms, int samplerate,
                                              float mipmap_ratio = 0.98F);
 
   //============================================================================
+  /**
+   * @brief A span of the M values
+   * 
+   * @param waveform The index of the waveform to get M values from
+   * @param mipmap The index of the mipmap entry to get M values from
+   */
   [[nodiscard]] inline Span<const float> m(int waveform,
                                            int mipmap) const noexcept {
     return m_[waveform][mipmap];
   }
+  /**
+   * @brief A span of the Q values
+   * 
+   * @param waveform The index of the waveform to get Q values from
+   * @param mipmap The index of the mipmap entry to get Q values from
+   */
   [[nodiscard]] inline Span<const float> q(int waveform,
                                            int mipmap) const noexcept {
     return q_[waveform][mipmap];
   }
+  /**
+   * @brief A span of the M_diff values (M_diff[i] = M[i] - M[i-1])
+   * 
+   * @param waveform The index of the waveform to get M_diff values from
+   * @param mipmap The index of the mipmap entry to get M_diff values from
+   */
   [[nodiscard]] inline Span<const float> mDiff(int waveform,
                                                int mipmap) const noexcept {
     return m_diff_[waveform][mipmap];
   }
+  /**
+   * @brief A span of the Q_diff values (Q_diff[i] = Q[i] - Q[i-1])
+   * 
+   * @param waveform The index of the waveform to get Q values from
+   * @param mipmap The index of the mipmap entry to get Q values from
+   */
   [[nodiscard]] inline Span<const float> qDiff(int waveform,
                                                int mipmap) const noexcept {
     return q_diff_[waveform][mipmap];
   }
+  /**
+   * @brief A span of the phase of each sample in the waveform
+   * 
+   * @param mipmap The index of the mipmap entry to get phases values from
+   */
   [[nodiscard]] inline Span<const float> phases(int mipmap) const noexcept {
     return phases_[mipmap];
   }
+  /**
+   * @brief Number of waveforms in the wavetable
+   */
   [[nodiscard]] inline int numWaveforms() const noexcept {
     return static_cast<int>(m_.size());
   }
+  /**
+   * @brief Number of mipmap entry in the mipmap table. This will depends on the
+   * size of the waveform and the samplerate
+   */
   [[nodiscard]] inline int numMipMapTables() const noexcept {
     return static_cast<int>(mipmap_scale_.size());
   }
+  /**
+   * @brief Size of the mipmap entry of the given index
+   */
   [[nodiscard]] inline int waveformLen(int mipmap) const noexcept {
     return static_cast<int>(m_[0][mipmap].size());
   }
+  /**
+   * @brief Ratios to help compute an estimation of the frequency variation limitation
+   * induced by the cross-fading implementation.
+   *
+   * This function returns [min, max]. Given your previous phase_diff value :
+   *  - min * phase_diff : the next minimum phase_diff you should be able to use
+   * without introducing audio "clicks"
+   * - max * phase_diff : the next maximum phase_diff you should be able to use
+   * without introducing audio "clicks"
+   */
   [[nodiscard]] inline std::tuple<float, float> minMaxPhaseDiffRatio()
       const noexcept {
     return std::make_tuple(mipmap_ratio_, 1.F / mipmap_ratio_);
   };
 
-  [[nodiscard]] MipMapIndexes findMipMapIndexes(
+  /**
+   * @brief Returns the @ref MipMapIndices tuple for the given phase diff
+   */
+  [[nodiscard]] MipMapIndices findMipMapIndices(
       float phase_diff) const noexcept;
 
   //==============================================================================
