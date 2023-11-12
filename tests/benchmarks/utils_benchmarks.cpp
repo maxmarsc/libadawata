@@ -1,6 +1,22 @@
 /*
 * utils_benchmarks.cpp
 * Created by maxmarsc, 08/10/2023
+*
+* libadawata benchmarks
+* Copyright (C) 2023  Maxime Coutant
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <cmath>
@@ -8,26 +24,6 @@
 #include "utils_benchmarks.hpp"
 
 namespace benchmarks {
-
-/**
-//
-// A = sine wave amplitude
-// fs = sample rate (Hz)
-// f0 = initial frequency (Hz)
-// f1 = final frequency (Hz)
-// T_sweep = duration of sweep (s)
-//
-phi = 0;                      // phase accumulator
-f = f0;                       // initial frequency
-delta = 2 * pi * f / Fs;      // phase increment per sample
-f_delta = (f1 - f0) / (Fs * T_sweep);
-                              // instantaneous frequency increment per sample
-for each sample
-    output = A * sin(phi);    // output sample value for current sample
-    phi += delta;             // increment phase accumulator
-    f += f_delta;             // increment instantaneous frequency
-    delta = 2 * pi * f / Fs;  // re-calculate phase increment
-*/
 
 void generateLinearSweepPhase(adwt::Span<float> dst, float start, float end,
                               float sr) {
