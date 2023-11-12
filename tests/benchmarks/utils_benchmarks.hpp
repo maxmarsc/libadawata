@@ -21,7 +21,6 @@
 
 #pragma once
 
-// #include <span>
 #include "adwt/span.hpp"
 
 namespace benchmarks {

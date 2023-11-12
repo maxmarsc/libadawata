@@ -47,7 +47,7 @@ TEST_CASE("Valid build") {
 
   auto waveforms = std::vector<float>(waveform_len * num_waveforms);
   auto waveform_data =
-      adwt::WaveformData::build(waveforms, num_waveforms, samplerate);
+      adwt::WavetableData::build(waveforms, num_waveforms, samplerate);
 
   INFO("waveform_len : " << waveform_len);
   INFO("num_waveforms : " << num_waveforms);
@@ -106,7 +106,7 @@ TEST_CASE("Invalid samplerate") {
 
   auto waveforms = std::vector<float>(waveform_len * num_waveforms);
   auto waveform_data =
-      adwt::WaveformData::build(waveforms, num_waveforms, samplerate);
+      adwt::WavetableData::build(waveforms, num_waveforms, samplerate);
 
   REQUIRE(waveform_data.get() == nullptr);
 }
@@ -120,7 +120,7 @@ TEST_CASE("Invalid waveform span") {
   auto waveforms =
       std::vector<float>(waveform_len * num_waveforms + len_offset);
   auto waveform_data =
-      adwt::WaveformData::build(waveforms, num_waveforms, samplerate);
+      adwt::WavetableData::build(waveforms, num_waveforms, samplerate);
 
   INFO("waveforms : " << waveform_len * num_waveforms + len_offset);
   INFO("num_waveforms : " << num_waveforms);
@@ -134,7 +134,7 @@ TEST_CASE("Invalid num_waveforms") {
 
   auto waveforms = std::vector<float>(waveform_len * 64);
   auto waveform_data =
-      adwt::WaveformData::build(waveforms, num_waveforms, samplerate);
+      adwt::WavetableData::build(waveforms, num_waveforms, samplerate);
 
   REQUIRE(waveform_data.get() == nullptr);
 }

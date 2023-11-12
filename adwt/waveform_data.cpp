@@ -48,8 +48,8 @@ inline float computeQ(float x0, float x1, float y0, float y1) {
 }
 
 //==============================================================================
-WaveformData::WaveformData(Span<const float> waveforms, int num_waveforms,
-                           int samplerate, float mipmap_ratio)
+WavetableData::WavetableData(Span<const float> waveforms, int num_waveforms,
+                             int samplerate, float mipmap_ratio)
     : mipmap_ratio_((1.F + mipmap_ratio) / 2.F) {
   // Resize the vectors to be sure then can hold enough waveforms
   m_.resize(num_waveforms);
@@ -119,10 +119,10 @@ WaveformData::WaveformData(Span<const float> waveforms, int num_waveforms,
   }
 }
 
-std::unique_ptr<WaveformData> WaveformData::build(Span<const float> waveforms,
-                                                  int num_waveforms,
-                                                  int samplerate,
-                                                  float mipmap_ratio) {
+std::unique_ptr<WavetableData> WavetableData::build(Span<const float> waveforms,
+                                                    int num_waveforms,
+                                                    int samplerate,
+                                                    float mipmap_ratio) {
   if (waveforms.empty())
     return nullptr;
   if (num_waveforms <= 0)
@@ -140,13 +140,13 @@ std::unique_ptr<WaveformData> WaveformData::build(Span<const float> waveforms,
 
   // can't use make_unique because ctor is private
   try {
-    return std::unique_ptr<WaveformData>(
-        new WaveformData(waveforms, num_waveforms, samplerate, mipmap_ratio));
+    return std::unique_ptr<WavetableData>(
+        new WavetableData(waveforms, num_waveforms, samplerate, mipmap_ratio));
   } catch (std::runtime_error&) { return nullptr; }
 }
 
 //==============================================================================
-[[nodiscard]] WaveformData::MipMapIndices WaveformData::findMipMapIndices(
+[[nodiscard]] WavetableData::MipMapIndices WavetableData::findMipMapIndices(
     float abs_phase_diff) const noexcept {
   assert(abs_phase_diff != 0);
   // constexpr auto kThresholdRatio = 0.99F;
@@ -184,7 +184,7 @@ std::unique_ptr<WaveformData> WaveformData::build(Span<const float> waveforms,
 }
 
 //==============================================================================
-void WaveformData::computeMipMapScale(int waveform_len, float samplerate) {
+void WavetableData::computeMipMapScale(int waveform_len, float samplerate) {
   auto start = samplerate / static_cast<float>(waveform_len) * 2.F;
   auto num   = maths::floor(std::log2(samplerate / 2.F / start)) + 1;
 
@@ -195,8 +195,8 @@ void WaveformData::computeMipMapScale(int waveform_len, float samplerate) {
   }
 }
 
-void WaveformData::computeMQValues(Span<const float> waveform, int waveform_idx,
-                                   int mipmap_idx) {
+void WavetableData::computeMQValues(Span<const float> waveform,
+                                    int waveform_idx, int mipmap_idx) {
   assert(!m_.empty());
   assert(q_.size() == numWaveforms());
   assert(m_diff_.size() == numWaveforms());
@@ -240,7 +240,7 @@ void WaveformData::computeMQValues(Span<const float> waveform, int waveform_idx,
   q_diff_vec[waveform_len - 1] -= m_vec[0];
 }
 
-void WaveformData::computePhaseVector(int waveform_len, int mipmap_idx) {
+void WavetableData::computePhaseVector(int waveform_len, int mipmap_idx) {
   assert(!phases_.empty());
   phases_[mipmap_idx].resize(waveform_len + 1);
 
@@ -249,8 +249,8 @@ void WaveformData::computePhaseVector(int waveform_len, int mipmap_idx) {
   }
 }
 
-std::vector<float> WaveformData::downsampleWaveform(Span<const float> waveform,
-                                                    int ratio) {
+std::vector<float> WavetableData::downsampleWaveform(Span<const float> waveform,
+                                                     int ratio) {
   constexpr auto kRepetitions = 5;
   static_assert(maths::isOdd(kRepetitions));
   const auto in_size  = static_cast<int>(waveform.size());

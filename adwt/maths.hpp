@@ -54,7 +54,8 @@ inline constexpr bool isPowerOfTwo(int value) noexcept {
 }
 
 inline int sign(float value) noexcept {
-  if (value == 0.F)
+  constexpr auto kMin = std::numeric_limits<float>::min();
+  if (std::fabs(value) < kMin)
     return 0;
   return std::signbit(value) ? -1 : 1;
 }

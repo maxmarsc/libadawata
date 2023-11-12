@@ -57,10 +57,12 @@ void bmSweep(benchmark::State& state) {
   for (auto _ : state) {
     for (auto i : iter::range(num_blocks)) {
       const auto upsampled_block_size = upsampling_ratio * block_size;
-      auto phase_span                 = adwt::Span<float>(
-          phase_sweep.data() + i * upsampled_block_size, upsampled_block_size);
+      auto phase_span =
+          adwt::Span<float>(phase_sweep.data() + i * upsampled_block_size,
+                            static_cast<std::size_t>(upsampled_block_size));
       auto output_span =
-          adwt::Span<float>(output_vec.data() + i * block_size, block_size);
+          adwt::Span<float>(output_vec.data() + i * block_size,
+                            static_cast<std::size_t>(block_size));
       osc.process(phase_span, output_span);
     }
   }

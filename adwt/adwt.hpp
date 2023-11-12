@@ -91,9 +91,9 @@ class Oscillator {
    * @brief Load a waveform in the oscillator.
    *
    * @note This should only be called once. To change a loaded waveform the user
-   * shall call @ref swapWaveforms
+   * shall call @ref swapWavetable
    * 
-   * @param waveform_data A WaveformData object to load. The Oscillator object will
+   * @param waveform_data A WavetableData object to load. The Oscillator object will
    * take the handle of the pointer.
    * @param init_state A optionnal init tuple to set both previous phase and phase_diff
    * values (because this is a recursive algorithm). Once initialized, the user
@@ -101,12 +101,12 @@ class Oscillator {
    * @return int 0 on success
    */
   [[nodiscard]] int init(
-      std::unique_ptr<WaveformData>&& waveform_data,
+      std::unique_ptr<WavetableData>&& wavetable_data,
       std::tuple<float, float> init_state = std::make_tuple(0.F, 0.4F)) {
     assert(waveform_data_ == nullptr);
-    if (waveform_data == nullptr)
+    if (wavetable_data == nullptr)
       return 1;
-    wavetable_ = std::move(waveform_data);
+    wavetable_ = std::move(wavetable_data);
     resetInternals(std::get<0>(init_state), std::get<1>(init_state));
     crt_waveform_ = 0;
     return 0;
@@ -115,18 +115,18 @@ class Oscillator {
   /**
    * @brief Swap the current loaded waveform with a new one.
    * 
-   * @param waveform_data A WaveformData object to load. The Oscillator object will
+   * @param waveform_data A WavetableData object to load. The Oscillator object will
    * take the handle of the pointer.
    * @param init_state A optionnal init tuple to set both previous phase and phase_diff
    * values (because this is a recursive algorithm). Once initialized, the user
    * can reset again these values at any time by calling @ref resetInternals()
-   * @return std::unique_ptr<WaveformData> 
+   * @return std::unique_ptr<WavetableData> 
    */
-  [[nodiscard]] std::unique_ptr<WaveformData> swapWaveforms(
-      std::unique_ptr<WaveformData>&& waveform_data,
+  [[nodiscard]] std::unique_ptr<WavetableData> swapWavetable(
+      std::unique_ptr<WavetableData>&& wavetable_data,
       std::tuple<float, float> init_state = std::make_tuple(0.F, 0.4F)) {
     assert(waveform_data_ != nullptr);
-    auto waveform_data_ptr = std::move(waveform_data);
+    auto waveform_data_ptr = std::move(wavetable_data);
     if (waveform_data_ptr == nullptr)
       return nullptr;
     waveform_data_ptr.swap(wavetable_);
@@ -886,7 +886,7 @@ class Oscillator {
 
   //============================================================================
   // The currently loaded wavetable
-  std::unique_ptr<WaveformData> wavetable_;
+  std::unique_ptr<WavetableData> wavetable_;
 
   // Filter coefficients
   alignas(kAligment)

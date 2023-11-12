@@ -43,10 +43,10 @@ namespace adwt {
  * The interface of this class allows the creation of a wavetable through an unique
  * ptr, which can then be passed to an oscillator instance.
  */
-class WaveformData {
+class WavetableData {
   //============================================================================
-  WaveformData(Span<const float> waveforms, int num_waveforms, int samplerate,
-               float mipmap_ratio);
+  WavetableData(Span<const float> waveforms, int num_waveforms, int samplerate,
+                float mipmap_ratio);
 
  public:
   /**
@@ -60,7 +60,7 @@ class WaveformData {
   using MipMapIndices = std::tuple<int, float, int, float>;
 
   /**
-   * @brief Builds a new WaveformData instance for a given wavetable
+   * @brief Builds a new WavetableData instance for a given wavetable
    * 
    * @note When using a wavetable with non negligeable harmonics differences
    * between waveforms in the wavetable, the caller is responsible for any cross-fading
@@ -76,9 +76,9 @@ class WaveformData {
    * @param mipmap_ratio Ratio (0:1) of each octave that will be cross-faded with
    * the lowest octave
    */
-  static std::unique_ptr<WaveformData> build(Span<const float> waveforms,
-                                             int num_waveforms, int samplerate,
-                                             float mipmap_ratio = 0.98F);
+  static std::unique_ptr<WavetableData> build(Span<const float> waveforms,
+                                              int num_waveforms, int samplerate,
+                                              float mipmap_ratio = 0.98F);
 
   //============================================================================
   /**

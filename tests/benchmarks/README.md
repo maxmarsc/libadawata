@@ -1,3 +1,19 @@
+Here are speed benchmarks for the `libadawata` library, and a benchmark of JUCE's
+oversampling implementation, to have a comparison.
+
+It would be interesting (important ?) to add more benchmarks :
+- [ ] Add other oversampling implementations
+- [ ] Add benchmarks of bidirectionnal random values
+
+# Results
+These are the benchmarks of the version v1.0.0 presented at ADC23
+
+
+![v1.0.0 AVX2](.images/v1.0.0_sweep_x86_64_AVX2.png)
+![v1.0.0 AVX2 + FMA3](.images/v1.0.0_sweep_x86_64_AVX2_FMA3.png)
+![v1.0.0 NEON64](.images/v1.0.0_sweep_arm64_cortex_a53.png)
+
+
 # Licensing
 These benchmarks are licensed under the [GNU General Public License v.3](https://www.gnu.org/licenses/gpl-3.0.en.html)
 

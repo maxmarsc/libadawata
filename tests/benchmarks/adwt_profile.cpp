@@ -33,10 +33,10 @@ void profileSweepUpOrder6(int block_size) {
   const auto samplerate = 44100.F;
 
   // Init the waveform data
-  auto waveform_data = adwt::WaveformData::build(benchmarks::kSawWaveform, 1,
-                                                 static_cast<int>(samplerate));
+  auto waveform_data = adwt::WavetableData::build(benchmarks::kSawWaveform, 1,
+                                                  static_cast<int>(samplerate));
   if (waveform_data == nullptr) {
-    std::cerr << "Failed to build WaveformData object" << std::endl;
+    std::cerr << "Failed to build WavetableData object" << std::endl;
     std::abort();
   }
 
