@@ -117,7 +117,7 @@ target_link_libraries(
   adwt_profiler utils_benchmarks adawata sndfile
 )
 
-add_dependencies(adwt_benchmark benchmark_project libsndfile_project)
+add_dependencies(adwt_profiler benchmark_project libsndfile_project)
 
 add_subdirectory(source)
 
