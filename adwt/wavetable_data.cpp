@@ -49,7 +49,7 @@ inline float computeQ(float x0, float x1, float y0, float y1) {
 
 //==============================================================================
 WavetableData::WavetableData(Span<const float> waveforms, int num_waveforms,
-                             int samplerate, float mipmap_ratio)
+                             float samplerate, float mipmap_ratio)
     : mipmap_ratio_((1.F + mipmap_ratio) / 2.F) {
   // Resize the vectors to be sure then can hold enough waveforms
   m_.resize(num_waveforms);
@@ -61,7 +61,7 @@ WavetableData::WavetableData(Span<const float> waveforms, int num_waveforms,
       static_cast<int>(waveforms.size()) / num_waveforms;
 
   // Compute the mipmap scale and how many entries in the mipmap tables
-  computeMipMapScale(og_waveform_len, static_cast<float>(samplerate));
+  computeMipMapScale(og_waveform_len, samplerate);
   assert(numMipMapTables() > 0);
 
   // Compute the phase points vectors
@@ -121,13 +121,13 @@ WavetableData::WavetableData(Span<const float> waveforms, int num_waveforms,
 
 std::unique_ptr<WavetableData> WavetableData::build(Span<const float> waveforms,
                                                     int num_waveforms,
-                                                    int samplerate,
+                                                    float samplerate,
                                                     float mipmap_ratio) {
   if (waveforms.empty())
     return nullptr;
   if (num_waveforms <= 0)
     return nullptr;
-  if (samplerate <= 0)
+  if (samplerate <= 0.F)
     return nullptr;
 
   // The waveforms span must contains waveforms of the same length
@@ -143,6 +143,11 @@ std::unique_ptr<WavetableData> WavetableData::build(Span<const float> waveforms,
     return std::unique_ptr<WavetableData>(
         new WavetableData(waveforms, num_waveforms, samplerate, mipmap_ratio));
   } catch (std::runtime_error&) { return nullptr; }
+}
+
+void WavetableData::updateSamplerate(float samplerate) {
+  // Recompute the mipmap scale
+  computeMipMapScale(waveformLen(0), samplerate);
 }
 
 //==============================================================================
@@ -184,9 +189,13 @@ std::unique_ptr<WavetableData> WavetableData::build(Span<const float> waveforms,
 }
 
 //==============================================================================
+int WavetableData::computeNumMipMapTables(int waveform_len) {
+  return maths::floor(std::log2(static_cast<float>(waveform_len) / 4.F)) + 1;
+}
+
 void WavetableData::computeMipMapScale(int waveform_len, float samplerate) {
-  auto start = samplerate / static_cast<float>(waveform_len) * 2.F;
-  auto num   = maths::floor(std::log2(samplerate / 2.F / start)) + 1;
+  const auto start = samplerate / static_cast<float>(waveform_len) * 2.F;
+  const auto num   = computeNumMipMapTables(waveform_len);
 
   // Compute the mipmap scale
   mipmap_scale_.resize(num);

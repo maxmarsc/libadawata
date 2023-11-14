@@ -160,6 +160,12 @@ class Oscillator {
     }
   }
 
+  /**
+   * @brief Updates the samplerate of the wavetable by recomputing mipmap transition
+   * points
+   */
+  void updateSamplerate(float samplerate);
+
   //============================================================================
   /**
    * @brief Generate a waveform signal according to the given phase values

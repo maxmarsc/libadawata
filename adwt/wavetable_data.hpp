@@ -45,8 +45,8 @@ namespace adwt {
  */
 class WavetableData {
   //============================================================================
-  WavetableData(Span<const float> waveforms, int num_waveforms, int samplerate,
-                float mipmap_ratio);
+  WavetableData(Span<const float> waveforms, int num_waveforms,
+                float samplerate, float mipmap_ratio);
 
  public:
   /**
@@ -77,8 +77,15 @@ class WavetableData {
    * the lowest octave
    */
   static std::unique_ptr<WavetableData> build(Span<const float> waveforms,
-                                              int num_waveforms, int samplerate,
+                                              int num_waveforms,
+                                              float samplerate,
                                               float mipmap_ratio = 0.98F);
+
+  /**
+   * @brief Updates the samplerate of the wavetable by recomputing mipmap transition
+   * points
+   */
+  void updateSamplerate(float samplerate);
 
   //============================================================================
   /**
@@ -171,6 +178,7 @@ class WavetableData {
 
   //==============================================================================
  private:
+  static int computeNumMipMapTables(int waveform_len);
   void computeMipMapScale(int waveform_len, float samplerate);
   void computeMQValues(Span<const float> waveform, int waveform_idx,
                        int mipmap_idx);

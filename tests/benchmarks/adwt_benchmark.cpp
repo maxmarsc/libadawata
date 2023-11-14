@@ -36,8 +36,7 @@ void bmSweepUpOrder2(benchmark::State& state) {
   const auto samplerate = 44100.F;
 
   // Init the waveform data
-  auto wavetable_data =
-      adwt::WavetableData::build(kSawWaveform, 1, static_cast<int>(samplerate));
+  auto wavetable_data = adwt::WavetableData::build(kSawWaveform, 1, samplerate);
   if (wavetable_data == nullptr) {
     std::cerr << "Failed to build WavetableData object" << std::endl;
     std::abort();
@@ -76,8 +75,7 @@ void bmSweepUpOrder4(benchmark::State& state) {
   const auto samplerate = 44100.F;
 
   // Init the waveform data
-  auto wavetable_data =
-      adwt::WavetableData::build(kSawWaveform, 1, static_cast<int>(samplerate));
+  auto wavetable_data = adwt::WavetableData::build(kSawWaveform, 1, samplerate);
   if (wavetable_data == nullptr) {
     std::cerr << "Failed to build WavetableData object" << std::endl;
     std::abort();
@@ -112,8 +110,7 @@ void bmSweepUpOrder6(benchmark::State& state) {
   const auto samplerate = 44100.F;
 
   // Init the waveform data
-  auto wavetable_data =
-      adwt::WavetableData::build(kSawWaveform, 1, static_cast<int>(samplerate));
+  auto wavetable_data = adwt::WavetableData::build(kSawWaveform, 1, samplerate);
   if (wavetable_data == nullptr) {
     std::cerr << "Failed to build WavetableData object" << std::endl;
     std::abort();
@@ -148,8 +145,7 @@ void bmSweepUpOrder8(benchmark::State& state) {
   const auto samplerate = 44100.F;
 
   // Init the waveform data
-  auto wavetable_data =
-      adwt::WavetableData::build(kSawWaveform, 1, static_cast<int>(samplerate));
+  auto wavetable_data = adwt::WavetableData::build(kSawWaveform, 1, samplerate);
   if (wavetable_data == nullptr) {
     std::cerr << "Failed to build WavetableData object" << std::endl;
     std::abort();
@@ -184,8 +180,7 @@ void bmSweepUpOrder10(benchmark::State& state) {
   const auto samplerate = 44100.F;
 
   // Init the waveform data
-  auto wavetable_data =
-      adwt::WavetableData::build(kSawWaveform, 1, static_cast<int>(samplerate));
+  auto wavetable_data = adwt::WavetableData::build(kSawWaveform, 1, samplerate);
   if (wavetable_data == nullptr) {
     std::cerr << "Failed to build WavetableData object" << std::endl;
     std::abort();
