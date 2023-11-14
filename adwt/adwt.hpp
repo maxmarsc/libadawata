@@ -103,7 +103,7 @@ class Oscillator {
   [[nodiscard]] int init(
       std::unique_ptr<WavetableData>&& wavetable_data,
       std::tuple<float, float> init_state = std::make_tuple(0.F, 0.4F)) {
-    assert(waveform_data_ == nullptr);
+    assert(wavetable_ == nullptr);
     if (wavetable_data == nullptr)
       return 1;
     wavetable_ = std::move(wavetable_data);
@@ -125,7 +125,7 @@ class Oscillator {
   [[nodiscard]] std::unique_ptr<WavetableData> swapWavetable(
       std::unique_ptr<WavetableData>&& wavetable_data,
       std::tuple<float, float> init_state = std::make_tuple(0.F, 0.4F)) {
-    assert(waveform_data_ != nullptr);
+    assert(wavetable_ != nullptr);
     auto waveform_data_ptr = std::move(wavetable_data);
     if (waveform_data_ptr == nullptr)
       return nullptr;
@@ -144,7 +144,7 @@ class Oscillator {
    * @param init_phase_diff The new previous phase_diff value to set
    */
   void resetInternals(float init_phase, float init_phase_diff) {
-    assert(waveform_data_ != nullptr);
+    assert(wavetable_ != nullptr);
     prev_cpx_y_array_ = std::array<std::complex<float>, kNumCoeffs>{};
     prev_phase_       = init_phase;
     prev_phase_red_   = maths::reduce(init_phase, 1.F);
@@ -184,14 +184,14 @@ class Oscillator {
    * @brief The number of waveforms in the loaded wavetable
    */
   [[nodiscard]] inline int numWaveforms() const noexcept {
-    assert(waveform_data_ != nullptr);
+    assert(wavetable_ != nullptr);
     return wavetable_->numWaveforms();
   }
   /**
    * @brief The index of the current waveform in the loaded wavetable
    */
   [[nodiscard]] inline int crtWaveform() const noexcept {
-    assert(waveform_data_ != nullptr);
+    assert(wavetable_ != nullptr);
     return crt_waveform_;
   }
   /**
@@ -200,9 +200,10 @@ class Oscillator {
    * audio "clicks" due to jumps in harmonics.
    */
   inline void setWaveform(int waveform_idx) noexcept {
-    assert(waveform_data_ != nullptr);
+    assert(wavetable_ != nullptr);
     crt_waveform_ = waveform_idx;
   }
+  // inline float prevPhase() const noexcept { assert(waveform_) }
   /**
    * @brief Ratios to help compute an estimation of the frequency variation limitation
    * induced by the cross-fading implementation.
@@ -215,7 +216,7 @@ class Oscillator {
    */
   [[nodiscard]] inline std::tuple<float, float> minMaxPhaseDiffRatio()
       const noexcept {
-    assert(waveform_data_ != nullptr);
+    assert(wavetable_ != nullptr);
     return wavetable_->minMaxPhaseDiffRatio();
   };
 
@@ -283,8 +284,8 @@ class Oscillator {
     // Get the spans of m & q
 #if !defined(ADWT_ENABLE_CXX20) & defined(NDEBUG)
     // gsl::span performs bound-checking on the [] operator
-    const auto* m_span = waveform_data_->m(crt_waveform_, mipmap_idx).data();
-    const auto* q_span = waveform_data_->q(crt_waveform_, mipmap_idx).data();
+    const auto* m_span = wavetable_->m(crt_waveform_, mipmap_idx).data();
+    const auto* q_span = wavetable_->q(crt_waveform_, mipmap_idx).data();
 #else
     auto m_span     = wavetable_->m(crt_waveform_, mipmap_idx);
     auto q_span     = wavetable_->q(crt_waveform_, mipmap_idx);
@@ -364,10 +365,10 @@ class Oscillator {
 #if !defined(ADWT_ENABLE_CXX20) & defined(NDEBUG)
     // gsl::span performs bound-checking on the [] operator
     const auto* mdiff_span =
-        waveform_data_->mDiff(crt_waveform_, mipmap_idx).data();
+        wavetable_->mDiff(crt_waveform_, mipmap_idx).data();
     const auto* qdiff_span =
-        waveform_data_->qDiff(crt_waveform_, mipmap_idx).data();
-    const auto* phase_span = waveform_data_->phases(mipmap_idx).data();
+        wavetable_->qDiff(crt_waveform_, mipmap_idx).data();
+    const auto* phase_span = wavetable_->phases(mipmap_idx).data();
 #else
     auto mdiff_span = wavetable_->mDiff(crt_waveform_, mipmap_idx);
     auto qdiff_span = wavetable_->qDiff(crt_waveform_, mipmap_idx);
@@ -467,10 +468,10 @@ class Oscillator {
 #if !defined(ADWT_ENABLE_CXX20) & defined(NDEBUG)
     // gsl::span performs bound-checking on the [] operator
     const auto* mdiff_span =
-        waveform_data_->mDiff(crt_waveform_, mipmap_idx).data();
+        wavetable_->mDiff(crt_waveform_, mipmap_idx).data();
     const auto* qdiff_span =
-        waveform_data_->qDiff(crt_waveform_, mipmap_idx).data();
-    const auto* phase_span = waveform_data_->phases(mipmap_idx).data();
+        wavetable_->qDiff(crt_waveform_, mipmap_idx).data();
+    const auto* phase_span = wavetable_->phases(mipmap_idx).data();
 #else
     auto mdiff_span = wavetable_->mDiff(crt_waveform_, mipmap_idx);
     auto qdiff_span = wavetable_->qDiff(crt_waveform_, mipmap_idx);
@@ -558,7 +559,7 @@ class Oscillator {
       std::array<std::complex<float>, kUpperNumCoeffs>& aligned_array,
       int mipmap_idx, int jmin, int jmin_red, int jmax_p_red, float phase_diff,
       float phase_red) const noexcept {
-    assert(waveform_data_ != nullptr);
+    assert(wavetable_ != nullptr);
     assert(phase_diff < 0);
     const auto prev_phase_red_bar = prev_phase_red_;
     const auto phase_red_bar = phase_red + static_cast<float>(phase_red == 0.F);
@@ -587,7 +588,7 @@ class Oscillator {
       std::array<std::complex<float>, kUpperNumCoeffs>& aligned_array,
       int mipmap_idx, int jmin_red, int jmax_p_red, float phase_diff,
       float phase_red) const noexcept {
-    assert(waveform_data_ != nullptr);
+    assert(wavetable_ != nullptr);
     const auto prev_phase_red_bar =
         prev_phase_red_ + static_cast<int>(prev_phase_red_ == 0.F);
 
@@ -602,7 +603,7 @@ class Oscillator {
    * @brief Forward-only processing of a span of values
    */
   void processFwd(Span<const float> phases, Span<float> output) {
-    assert(waveform_data_ != nullptr);
+    assert(wavetable_ != nullptr);
     assert(phases.size() == output.size());
     for (auto&& [phase, output] : iter::zip(phases, output)) {
       auto phase_diff = phase - prev_phase_;
@@ -619,7 +620,7 @@ class Oscillator {
    * @brief Bidirectionnal processing of an entire span of values
    */
   void processBi(Span<const float> phases, Span<float> output) {
-    assert(waveform_data_ != nullptr);
+    assert(wavetable_ != nullptr);
     assert(phases.size() == output.size());
     for (auto&& [phase, output] : iter::zip(phases, output)) {
       // Ensure the phase diff is in [-0.5; 0.5]

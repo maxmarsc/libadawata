@@ -17,8 +17,6 @@ target_include_directories(
   PRIVATE ${PROJECT_SOURCE_DIR} ${SNDFILE_INSTALL_DIR}/include
 )
 
-# set_target_properties( libadawata_tests PROPERTIES CXX_STANDARD 20 )
-
 if(ENABLE_CXX20)
   set_target_properties(libadawata_tests PROPERTIES CXX_STANDARD 20)
 else()
