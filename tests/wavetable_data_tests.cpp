@@ -1,5 +1,5 @@
 /*
-* waveform_data_tests.cpp
+* wavetable_data_tests.cpp
 * Created by maxmarsc, 27/09/2023
 *
 * This work is licensed under the MIT License
@@ -33,7 +33,7 @@
 #include <catch2/generators/catch_generators_random.hpp>
 #include <cppitertools/range.hpp>
 
-#include "adwt/waveform_data.hpp"
+#include "adwt/wavetable_data.hpp"
 
 namespace tests {
 
@@ -46,32 +46,32 @@ TEST_CASE("Valid build") {
   const auto samplerate = 44100;
 
   auto waveforms = std::vector<float>(waveform_len * num_waveforms);
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(waveforms, num_waveforms, samplerate);
 
   INFO("waveform_len : " << waveform_len);
   INFO("num_waveforms : " << num_waveforms);
   INFO("samplerate : " << samplerate);
-  REQUIRE(waveform_data.get() != nullptr);
-  CHECK(waveform_data->numWaveforms() == num_waveforms);
+  REQUIRE(wavetable_data.get() != nullptr);
+  CHECK(wavetable_data->numWaveforms() == num_waveforms);
 
   // Check the number of mipmap tables match the expectations
   const auto expected_mipmap_tables = std::log2(waveform_len) - 1;
-  REQUIRE(waveform_data->numMipMapTables() == expected_mipmap_tables);
+  REQUIRE(wavetable_data->numMipMapTables() == expected_mipmap_tables);
 
   // Check the access and size of each sub table in the data
-  for (auto mipmap_idx : iter::range(waveform_data->numMipMapTables())) {
+  for (auto mipmap_idx : iter::range(wavetable_data->numMipMapTables())) {
     const auto expected_size =
         static_cast<std::size_t>(waveform_len) / (1 << mipmap_idx);
 
-    auto phase_span = waveform_data->phases(mipmap_idx);
+    auto phase_span = wavetable_data->phases(mipmap_idx);
     CHECK(phase_span.size() == expected_size + 1);
 
-    for (auto waveform_idx : iter::range(waveform_data->numWaveforms())) {
-      auto m_span  = waveform_data->m(waveform_idx, mipmap_idx);
-      auto q_span  = waveform_data->q(waveform_idx, mipmap_idx);
-      auto md_span = waveform_data->mDiff(waveform_idx, mipmap_idx);
-      auto qd_span = waveform_data->qDiff(waveform_idx, mipmap_idx);
+    for (auto waveform_idx : iter::range(wavetable_data->numWaveforms())) {
+      auto m_span  = wavetable_data->m(waveform_idx, mipmap_idx);
+      auto q_span  = wavetable_data->q(waveform_idx, mipmap_idx);
+      auto md_span = wavetable_data->mDiff(waveform_idx, mipmap_idx);
+      auto qd_span = wavetable_data->qDiff(waveform_idx, mipmap_idx);
 
       CHECK(m_span.size() == expected_size);
       CHECK(q_span.size() == expected_size);
@@ -89,12 +89,12 @@ TEST_CASE("Valid build") {
     const auto abs_phase_diff = rng.get();
 
     auto&& [crt_idx, crt_weight, nxt_idx, nxt_weight] =
-        waveform_data->findMipMapIndices(abs_phase_diff);
+        wavetable_data->findMipMapIndices(abs_phase_diff);
 
     INFO("phase_diff : " << abs_phase_diff);
     REQUIRE(crt_weight + nxt_weight == 1.0F);
     REQUIRE(crt_idx >= 0);
-    REQUIRE(crt_idx < waveform_data->numMipMapTables());
+    REQUIRE(crt_idx < wavetable_data->numMipMapTables());
     REQUIRE(crt_idx + 1 == nxt_idx);
   }
 }
@@ -105,10 +105,10 @@ TEST_CASE("Invalid samplerate") {
   const auto samplerate    = GENERATE(-16000, 0);
 
   auto waveforms = std::vector<float>(waveform_len * num_waveforms);
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(waveforms, num_waveforms, samplerate);
 
-  REQUIRE(waveform_data.get() == nullptr);
+  REQUIRE(wavetable_data.get() == nullptr);
 }
 
 TEST_CASE("Invalid waveform span") {
@@ -119,12 +119,12 @@ TEST_CASE("Invalid waveform span") {
 
   auto waveforms =
       std::vector<float>(waveform_len * num_waveforms + len_offset);
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(waveforms, num_waveforms, samplerate);
 
   INFO("waveforms : " << waveform_len * num_waveforms + len_offset);
   INFO("num_waveforms : " << num_waveforms);
-  REQUIRE(waveform_data.get() == nullptr);
+  REQUIRE(wavetable_data.get() == nullptr);
 }
 
 TEST_CASE("Invalid num_waveforms") {
@@ -133,10 +133,10 @@ TEST_CASE("Invalid num_waveforms") {
   const auto samplerate    = GENERATE(16000, 32000, 44100, 48000, 88200, 96000);
 
   auto waveforms = std::vector<float>(waveform_len * 64);
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(waveforms, num_waveforms, samplerate);
 
-  REQUIRE(waveform_data.get() == nullptr);
+  REQUIRE(wavetable_data.get() == nullptr);
 }
 
 }  // namespace tests

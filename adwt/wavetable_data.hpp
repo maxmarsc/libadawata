@@ -1,5 +1,5 @@
 /*
-* waveform_data.hpp
+* wavetable_data.hpp
 * Created by maxmarsc, 25/09/2023
 *
 * This work is licensed under the MIT License

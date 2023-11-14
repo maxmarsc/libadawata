@@ -57,10 +57,10 @@ TEST_CASE("Valid init BT2") {
   const auto samplerate    = GENERATE(44100, 48000);
   const auto waveforms     = std::vector<float>(waveform_len * num_waveforms);
 
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(waveforms, num_waveforms, samplerate);
-  REQUIRE(waveform_data != nullptr);
-  REQUIRE(osc.init(std::move(waveform_data)) == 0);
+  REQUIRE(wavetable_data != nullptr);
+  REQUIRE(osc.init(std::move(wavetable_data)) == 0);
   CHECK(osc.crtWaveform() == 0);
   CHECK(osc.numWaveforms() == num_waveforms);
 
@@ -108,11 +108,11 @@ TEST_CASE("Valid init BT2") {
   }
 
   SECTION("Then valid swap of same size and processing bidirectionnal") {
-    auto waveform_data_same =
+    auto wavetable_data_same =
         adwt::WavetableData::build(waveforms, num_waveforms, samplerate);
 
-    REQUIRE(waveform_data_same != nullptr);
-    REQUIRE(osc.swapWavetable(std::move(waveform_data_same)) != nullptr);
+    REQUIRE(wavetable_data_same != nullptr);
+    REQUIRE(osc.swapWavetable(std::move(wavetable_data_same)) != nullptr);
 
     const auto block_size = GENERATE(16, 32, 64, 128);
     auto phase_vector     = std::vector<float>(block_size);
@@ -133,11 +133,11 @@ TEST_CASE("Valid init BT2") {
   }
 
   SECTION("Then valid swap of same size and processing forward") {
-    auto waveform_data_same =
+    auto wavetable_data_same =
         adwt::WavetableData::build(waveforms, num_waveforms, samplerate);
 
-    REQUIRE(waveform_data_same != nullptr);
-    REQUIRE(osc.swapWavetable(std::move(waveform_data_same)) != nullptr);
+    REQUIRE(wavetable_data_same != nullptr);
+    REQUIRE(osc.swapWavetable(std::move(wavetable_data_same)) != nullptr);
 
     const auto block_size = GENERATE(16, 32, 64, 128);
     auto phase_vector     = std::vector<float>(block_size);
@@ -168,11 +168,11 @@ TEST_CASE("Valid init BT2") {
     const auto waveforms =
         std::vector<float>(new_waveform_len * new_num_waveforms);
 
-    auto new_waveform_data =
+    auto new_wavetable_data =
         adwt::WavetableData::build(waveforms, new_num_waveforms, samplerate);
 
-    REQUIRE(new_waveform_data != nullptr);
-    REQUIRE(osc.swapWavetable(std::move(new_waveform_data)) != nullptr);
+    REQUIRE(new_wavetable_data != nullptr);
+    REQUIRE(osc.swapWavetable(std::move(new_wavetable_data)) != nullptr);
 
     const auto block_size = GENERATE(16, 32, 64, 128);
     auto phase_vector     = std::vector<float>(block_size);
@@ -198,11 +198,11 @@ TEST_CASE("Valid init BT2") {
     const auto waveforms =
         std::vector<float>(new_waveform_len * new_num_waveforms);
 
-    auto new_waveform_data =
+    auto new_wavetable_data =
         adwt::WavetableData::build(waveforms, new_num_waveforms, samplerate);
 
-    REQUIRE(new_waveform_data != nullptr);
-    REQUIRE(osc.swapWavetable(std::move(new_waveform_data)) != nullptr);
+    REQUIRE(new_wavetable_data != nullptr);
+    REQUIRE(osc.swapWavetable(std::move(new_wavetable_data)) != nullptr);
 
     const auto block_size = GENERATE(16, 32, 64, 128);
     auto phase_vector     = std::vector<float>(block_size);
@@ -232,10 +232,10 @@ TEST_CASE("Valid init O6") {
   const auto samplerate    = GENERATE(44100);
   const auto waveforms     = std::vector<float>(waveform_len * num_waveforms);
 
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(waveforms, num_waveforms, samplerate);
-  REQUIRE(waveform_data != nullptr);
-  REQUIRE(osc.init(std::move(waveform_data)) == 0);
+  REQUIRE(wavetable_data != nullptr);
+  REQUIRE(osc.init(std::move(wavetable_data)) == 0);
   CHECK(osc.crtWaveform() == 0);
   CHECK(osc.numWaveforms() == num_waveforms);
 
@@ -292,10 +292,10 @@ TEST_CASE("Valid init O8") {
   const auto samplerate    = GENERATE(44100);
   const auto waveforms     = std::vector<float>(waveform_len * num_waveforms);
 
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(waveforms, num_waveforms, samplerate);
-  REQUIRE(waveform_data != nullptr);
-  REQUIRE(osc.init(std::move(waveform_data)) == 0);
+  REQUIRE(wavetable_data != nullptr);
+  REQUIRE(osc.init(std::move(wavetable_data)) == 0);
   CHECK(osc.crtWaveform() == 0);
   CHECK(osc.numWaveforms() == num_waveforms);
 
@@ -352,10 +352,10 @@ TEST_CASE("Valid init CH10") {
   const auto samplerate    = GENERATE(44100, 48000);
   const auto waveforms     = std::vector<float>(waveform_len * num_waveforms);
 
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(waveforms, num_waveforms, samplerate);
-  REQUIRE(waveform_data != nullptr);
-  REQUIRE(osc.init(std::move(waveform_data)) == 0);
+  REQUIRE(wavetable_data != nullptr);
+  REQUIRE(osc.init(std::move(wavetable_data)) == 0);
   CHECK(osc.crtWaveform() == 0);
   CHECK(osc.numWaveforms() == num_waveforms);
 
@@ -403,11 +403,11 @@ TEST_CASE("Valid init CH10") {
   }
 
   SECTION("Then valid swap of same size and processing bidirectionnal") {
-    auto waveform_data_same =
+    auto wavetable_data_same =
         adwt::WavetableData::build(waveforms, num_waveforms, samplerate);
 
-    REQUIRE(waveform_data_same != nullptr);
-    REQUIRE(osc.swapWavetable(std::move(waveform_data_same)) != nullptr);
+    REQUIRE(wavetable_data_same != nullptr);
+    REQUIRE(osc.swapWavetable(std::move(wavetable_data_same)) != nullptr);
 
     const auto block_size = GENERATE(16, 32, 64, 128);
     auto phase_vector     = std::vector<float>(block_size);
@@ -428,11 +428,11 @@ TEST_CASE("Valid init CH10") {
   }
 
   SECTION("Then valid swap of same size and processing forward") {
-    auto waveform_data_same =
+    auto wavetable_data_same =
         adwt::WavetableData::build(waveforms, num_waveforms, samplerate);
 
-    REQUIRE(waveform_data_same != nullptr);
-    REQUIRE(osc.swapWavetable(std::move(waveform_data_same)) != nullptr);
+    REQUIRE(wavetable_data_same != nullptr);
+    REQUIRE(osc.swapWavetable(std::move(wavetable_data_same)) != nullptr);
 
     const auto block_size = GENERATE(16, 32, 64, 128);
     auto phase_vector     = std::vector<float>(block_size);
@@ -463,11 +463,11 @@ TEST_CASE("Valid init CH10") {
     const auto waveforms =
         std::vector<float>(new_waveform_len * new_num_waveforms);
 
-    auto new_waveform_data =
+    auto new_wavetable_data =
         adwt::WavetableData::build(waveforms, new_num_waveforms, samplerate);
 
-    REQUIRE(new_waveform_data != nullptr);
-    REQUIRE(osc.swapWavetable(std::move(new_waveform_data)) != nullptr);
+    REQUIRE(new_wavetable_data != nullptr);
+    REQUIRE(osc.swapWavetable(std::move(new_wavetable_data)) != nullptr);
 
     const auto block_size = GENERATE(16, 32, 64, 128);
     auto phase_vector     = std::vector<float>(block_size);
@@ -493,11 +493,11 @@ TEST_CASE("Valid init CH10") {
     const auto waveforms =
         std::vector<float>(new_waveform_len * new_num_waveforms);
 
-    auto new_waveform_data =
+    auto new_wavetable_data =
         adwt::WavetableData::build(waveforms, new_num_waveforms, samplerate);
 
-    REQUIRE(new_waveform_data != nullptr);
-    REQUIRE(osc.swapWavetable(std::move(new_waveform_data)) != nullptr);
+    REQUIRE(new_wavetable_data != nullptr);
+    REQUIRE(osc.swapWavetable(std::move(new_wavetable_data)) != nullptr);
 
     const auto block_size = GENERATE(16, 32, 64, 128);
     auto phase_vector     = std::vector<float>(block_size);
@@ -544,13 +544,13 @@ TEST_CASE("Reference test : BT2 sweep") {
           waveform_len);
 
   // Init the waveform data
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(waveform_vector, 1, samplerate);
-  REQUIRE(waveform_data != nullptr);
+  REQUIRE(wavetable_data != nullptr);
 
   // Init the oscillator
   auto osc = adwt::Oscillator<adwt::FilterType::kType1>{};
-  REQUIRE(osc.init(std::move(waveform_data)) == 0);
+  REQUIRE(osc.init(std::move(wavetable_data)) == 0);
 
   // Init & read the phase file
   auto phase_sndfile = SndfileHandle(kSweepPhaseFile.data(), SFM_READ);
@@ -644,13 +644,13 @@ TEST_CASE("Reference test : CH10 sweep") {
           waveform_len);
 
   // Init the waveform data
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(waveform_vector, 1, samplerate);
-  REQUIRE(waveform_data != nullptr);
+  REQUIRE(wavetable_data != nullptr);
 
   // Init the oscillator
   auto osc = adwt::Oscillator<adwt::FilterType::kType2>{};
-  REQUIRE(osc.init(std::move(waveform_data),
+  REQUIRE(osc.init(std::move(wavetable_data),
                    std::make_tuple(kPhaseInit, kPhaseDiffInit)) == 0);
 
   // Init & read the phase file
@@ -740,13 +740,13 @@ TEST_CASE("Reference test : BT2 flipped sweep") {
           waveform_len);
 
   // Init the waveform data
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(waveform_vector, 1, samplerate);
-  REQUIRE(waveform_data != nullptr);
+  REQUIRE(wavetable_data != nullptr);
 
   // Init the oscillator
   auto osc = adwt::Oscillator<adwt::FilterType::kType1>{};
-  REQUIRE(osc.init(std::move(waveform_data),
+  REQUIRE(osc.init(std::move(wavetable_data),
                    std::make_tuple(kPhaseInit, kPhaseDiffInit)) == 0);
 
   // Init & read the phase file
@@ -832,13 +832,13 @@ TEST_CASE("Reference test : CH10 flipped sweep") {
           waveform_len);
 
   // Init the waveform data
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(waveform_vector, 1, samplerate);
-  REQUIRE(waveform_data != nullptr);
+  REQUIRE(wavetable_data != nullptr);
 
   // Init the oscillator
   auto osc = adwt::Oscillator<adwt::FilterType::kType2>{};
-  REQUIRE(osc.init(std::move(waveform_data),
+  REQUIRE(osc.init(std::move(wavetable_data),
                    std::make_tuple(kPhaseInit, kPhaseDiffInit)) == 0);
 
   // Init & read the phase file
@@ -924,13 +924,13 @@ TEST_CASE("Reference test : BT2 reverse sweep") {
           waveform_len);
 
   // Init the waveform data
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(waveform_vector, 1, samplerate);
-  REQUIRE(waveform_data != nullptr);
+  REQUIRE(wavetable_data != nullptr);
 
   // Init the oscillator
   auto osc = adwt::Oscillator<adwt::FilterType::kType1>{};
-  REQUIRE(osc.init(std::move(waveform_data),
+  REQUIRE(osc.init(std::move(wavetable_data),
                    std::make_tuple(kPhaseInit, kPhaseDiffInit)) == 0);
 
   // Init & read the phase file
@@ -1020,13 +1020,13 @@ TEST_CASE("Reference test : CH10 reverse sweep") {
           waveform_len);
 
   // Init the waveform data
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(waveform_vector, 1, samplerate);
-  REQUIRE(waveform_data != nullptr);
+  REQUIRE(wavetable_data != nullptr);
 
   // Init the oscillator
   auto osc = adwt::Oscillator<adwt::FilterType::kType2>{};
-  REQUIRE(osc.init(std::move(waveform_data),
+  REQUIRE(osc.init(std::move(wavetable_data),
                    std::make_tuple(kPhaseInit, kPhaseDiffInit)) == 0);
 
   // Init & read the phase file
@@ -1116,13 +1116,13 @@ TEST_CASE("Reference test : BT2 reverse flipped sweep") {
           waveform_len);
 
   // Init the waveform data
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(waveform_vector, 1, samplerate);
-  REQUIRE(waveform_data != nullptr);
+  REQUIRE(wavetable_data != nullptr);
 
   // Init the oscillator
   auto osc = adwt::Oscillator<adwt::FilterType::kType1>{};
-  REQUIRE(osc.init(std::move(waveform_data),
+  REQUIRE(osc.init(std::move(wavetable_data),
                    std::make_tuple(kPhaseInit, kPhaseDiffInit)) == 0);
 
   // Init & read the phase file
@@ -1208,13 +1208,13 @@ TEST_CASE("Reference test : CH10 reverse flipped sweep") {
           waveform_len);
 
   // Init the waveform data
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(waveform_vector, 1, samplerate);
-  REQUIRE(waveform_data != nullptr);
+  REQUIRE(wavetable_data != nullptr);
 
   // Init the oscillator
   auto osc = adwt::Oscillator<adwt::FilterType::kType2>{};
-  REQUIRE(osc.init(std::move(waveform_data),
+  REQUIRE(osc.init(std::move(wavetable_data),
                    std::make_tuple(kPhaseInit, kPhaseDiffInit)) == 0);
 
   // Init & read the phase file
@@ -1303,13 +1303,13 @@ TEST_CASE("Reference test : BT2 460Hz") {
           waveform_len);
 
   // Init the waveform data
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(waveform_vector, 1, samplerate);
-  REQUIRE(waveform_data != nullptr);
+  REQUIRE(wavetable_data != nullptr);
 
   // Init the oscillator
   auto osc = adwt::Oscillator<adwt::FilterType::kType1>{};
-  REQUIRE(osc.init(std::move(waveform_data)) == 0);
+  REQUIRE(osc.init(std::move(wavetable_data)) == 0);
 
   // Init & read the phase file
   auto phase_sndfile = SndfileHandle(k460_Phase_File.data(), SFM_READ);
@@ -1397,13 +1397,13 @@ TEST_CASE("Reference test : CH10 460Hz") {
           waveform_len);
 
   // Init the waveform data
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(waveform_vector, 1, samplerate);
-  REQUIRE(waveform_data != nullptr);
+  REQUIRE(wavetable_data != nullptr);
 
   // Init the oscillator
   auto osc = adwt::Oscillator<adwt::FilterType::kType2>{};
-  REQUIRE(osc.init(std::move(waveform_data)) == 0);
+  REQUIRE(osc.init(std::move(wavetable_data)) == 0);
 
   // Init & read the phase file
   auto phase_sndfile = SndfileHandle(k460_Phase_File.data(), SFM_READ);

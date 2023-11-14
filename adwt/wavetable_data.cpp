@@ -1,5 +1,5 @@
 /*
-* waveform_data.cpp
+* wavetable_data.cpp
 * Created by maxmarsc, 25/09/2023
 *
 * This work is licensed under the MIT License
@@ -25,7 +25,7 @@
 * SOFTWARE.
 */
 
-#include "waveform_data.hpp"
+#include "wavetable_data.hpp"
 
 #include <cmath>
 

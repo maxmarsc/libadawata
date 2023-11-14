@@ -7,10 +7,8 @@ endif()
 add_library(
   adawata
   ${CMAKE_CURRENT_SOURCE_DIR}/adwt.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/waveform_data.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/wavetable_data.cpp
 )
-
-# add_library(adawata::adawata ALIAS adawata)
 
 target_include_directories(
   adawata
@@ -67,7 +65,7 @@ install(
         ${CMAKE_CURRENT_SOURCE_DIR}/filter_type.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/maths.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/span.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/waveform_data.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/wavetable_data.hpp
   DESTINATION include/adwt
 )
 

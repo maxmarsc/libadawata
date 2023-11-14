@@ -33,16 +33,16 @@ void profileSweepUpOrder6(int block_size) {
   const auto samplerate = 44100.F;
 
   // Init the waveform data
-  auto waveform_data = adwt::WavetableData::build(benchmarks::kSawWaveform, 1,
-                                                  static_cast<int>(samplerate));
-  if (waveform_data == nullptr) {
+  auto wavetable_data = adwt::WavetableData::build(
+      benchmarks::kSawWaveform, 1, static_cast<int>(samplerate));
+  if (wavetable_data == nullptr) {
     std::cerr << "Failed to build WavetableData object" << std::endl;
     std::abort();
   }
 
   // Init the oscillator
   auto osc = adwt::Oscillator<adwt::FilterType::kType5>{};
-  if (osc.init(std::move(waveform_data), std::make_tuple(0.99F, 0.01F)) != 0) {
+  if (osc.init(std::move(wavetable_data), std::make_tuple(0.99F, 0.01F)) != 0) {
     std::cerr << "Failed to init oscillator class" << std::endl;
     std::abort();
   }

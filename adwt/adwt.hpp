@@ -43,7 +43,7 @@
 #include "filter_type.hpp"
 #include "maths.hpp"
 #include "span.hpp"
-#include "waveform_data.hpp"
+#include "wavetable_data.hpp"
 
 namespace xs = xsimd;
 
@@ -61,7 +61,7 @@ namespace adwt {
  * audio "clicks" due to unattenuated jumps in harmonics.
  *
  * Anti-Derivative Anti-Aliasing (ADAA) is an "new" anti-aliasing technique. This
- * implementation is based on the work of Leonardo Gabriellin, Stefano D'Angelo,
+ * implementation is based on the work of Leonardo Gabrielli, Stefano D'Angelo,
  * Pier Paolo La Pastina and Stefano Squartini : 
  *
  * "Antiderivative Antialiasing for Arbitrary Waveform Generation" - August 2022

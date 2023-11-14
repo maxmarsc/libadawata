@@ -36,16 +36,16 @@ void bmSweepUpOrder2(benchmark::State& state) {
   const auto samplerate = 44100.F;
 
   // Init the waveform data
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(kSawWaveform, 1, static_cast<int>(samplerate));
-  if (waveform_data == nullptr) {
+  if (wavetable_data == nullptr) {
     std::cerr << "Failed to build WavetableData object" << std::endl;
     std::abort();
   }
 
   // Init the oscillator
   auto osc = adwt::Oscillator<adwt::FilterType::kType1>{};
-  if (osc.init(std::move(waveform_data), std::make_tuple(0.99F, 0.01F)) != 0) {
+  if (osc.init(std::move(wavetable_data), std::make_tuple(0.99F, 0.01F)) != 0) {
     std::cerr << "Failed to init oscillator class" << std::endl;
     std::abort();
   }
@@ -76,16 +76,16 @@ void bmSweepUpOrder4(benchmark::State& state) {
   const auto samplerate = 44100.F;
 
   // Init the waveform data
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(kSawWaveform, 1, static_cast<int>(samplerate));
-  if (waveform_data == nullptr) {
+  if (wavetable_data == nullptr) {
     std::cerr << "Failed to build WavetableData object" << std::endl;
     std::abort();
   }
 
   // Init the oscillator
   auto osc = adwt::Oscillator<adwt::FilterType::kType3>{};
-  if (osc.init(std::move(waveform_data)) != 0) {
+  if (osc.init(std::move(wavetable_data)) != 0) {
     std::cerr << "Failed to init oscillator class" << std::endl;
   }
 
@@ -112,16 +112,16 @@ void bmSweepUpOrder6(benchmark::State& state) {
   const auto samplerate = 44100.F;
 
   // Init the waveform data
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(kSawWaveform, 1, static_cast<int>(samplerate));
-  if (waveform_data == nullptr) {
+  if (wavetable_data == nullptr) {
     std::cerr << "Failed to build WavetableData object" << std::endl;
     std::abort();
   }
 
   // Init the oscillator
   auto osc = adwt::Oscillator<adwt::FilterType::kType4>{};
-  if (osc.init(std::move(waveform_data)) != 0) {
+  if (osc.init(std::move(wavetable_data)) != 0) {
     std::cerr << "Failed to init oscillator class" << std::endl;
   }
 
@@ -148,16 +148,16 @@ void bmSweepUpOrder8(benchmark::State& state) {
   const auto samplerate = 44100.F;
 
   // Init the waveform data
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(kSawWaveform, 1, static_cast<int>(samplerate));
-  if (waveform_data == nullptr) {
+  if (wavetable_data == nullptr) {
     std::cerr << "Failed to build WavetableData object" << std::endl;
     std::abort();
   }
 
   // Init the oscillator
   auto osc = adwt::Oscillator<adwt::FilterType::kType5>{};
-  if (osc.init(std::move(waveform_data)) != 0) {
+  if (osc.init(std::move(wavetable_data)) != 0) {
     std::cerr << "Failed to init oscillator class" << std::endl;
   }
 
@@ -184,16 +184,16 @@ void bmSweepUpOrder10(benchmark::State& state) {
   const auto samplerate = 44100.F;
 
   // Init the waveform data
-  auto waveform_data =
+  auto wavetable_data =
       adwt::WavetableData::build(kSawWaveform, 1, static_cast<int>(samplerate));
-  if (waveform_data == nullptr) {
+  if (wavetable_data == nullptr) {
     std::cerr << "Failed to build WavetableData object" << std::endl;
     std::abort();
   }
 
   // Init the oscillator
   auto osc = adwt::Oscillator<adwt::FilterType::kType2>{};
-  if (osc.init(std::move(waveform_data)) != 0) {
+  if (osc.init(std::move(wavetable_data)) != 0) {
     std::cerr << "Failed to init oscillator class" << std::endl;
   }
 
