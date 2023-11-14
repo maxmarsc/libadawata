@@ -203,7 +203,21 @@ class Oscillator {
     assert(wavetable_ != nullptr);
     crt_waveform_ = waveform_idx;
   }
-  // inline float prevPhase() const noexcept { assert(waveform_) }
+  /**
+   * @brief The phase of the previously generated sample
+   */
+  [[nodiscard]] inline float prevPhase() const noexcept {
+    assert(wavetable_ != nullptr);
+    return prev_phase_;
+  }
+  /**
+   * @brief The phase diff betwen the previously generated sample and the one
+   * before
+   */
+  [[nodiscard]] inline float prevPhaseDiff() const noexcept {
+    assert(wavetable_ != nullptr);
+    return prev_phase_diff_;
+  }
   /**
    * @brief Ratios to help compute an estimation of the frequency variation limitation
    * induced by the cross-fading implementation.
