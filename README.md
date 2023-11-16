@@ -33,7 +33,7 @@ See [Licensing](#Licensing) for licensing details
 # How to use
 Everything is under the `adwt::` namespace. There are two classes to use :
 - `adwt::Oscillator` : the main oscillator class
-- `adwt::WaveformData` : the class used to load wavetable into the oscillator
+- `adwt::WavetableData` : the class used to load wavetable into the oscillator
 
 Here is a basic example on how to create an oscillator, and load a waveform :
 ```cpp
@@ -47,8 +47,8 @@ auto my_wavetable = std::vector<float>(num_waveforms * waveform_len);
 // TODO: Fill the vector with your wavetable
 
 // Load the wavetable
-auto waveform_data = adwt::WaveformData::build(my_wavetable, num_waveforms, 44100);
-if (waveform_data == nullptr) {
+auto wavetable_data = adwt::WavetableData::build(my_wavetable, num_waveforms, 44100);
+if (wavetable_data == nullptr) {
     std::cerr << "Failed to load the wavetable" << std::endl;
     std::abort();
 }
@@ -57,7 +57,7 @@ if (waveform_data == nullptr) {
 auto osc = adwt::Oscillator<adwt::FilterType::kType5>{};
 
 // Init your oscillator
-if (osc.init(std::move(waveform_data)) != 0) {
+if (osc.init(std::move(wavetable_data)) != 0) {
   std::cerr << "Failed to init oscillator" << std::endl;
   std::abort();
 }
