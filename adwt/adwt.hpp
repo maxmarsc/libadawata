@@ -164,7 +164,10 @@ class Oscillator {
    * @brief Updates the samplerate of the wavetable by recomputing mipmap transition
    * points
    */
-  void updateSamplerate(float samplerate);
+  void updateSamplerate(float samplerate) {
+    assert(wavetable_ != nullptr);
+    wavetable_->updateSamplerate(samplerate);
+  }
 
   //============================================================================
   /**
