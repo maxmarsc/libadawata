@@ -21,7 +21,7 @@ with the following setup
 | x84_64  | g++-11.4 | SSE2 + FMA3 | OK
 | x84_64 | g++-10.5  | SSE2 | OK
 | x84_64 | g++-10.5  | SSE2 + FMA3 | OK
-| aarch64 | g++ 10.2.1 | neon64 | [currently broken](https://github.com/xtensor-stack/xsimd/issues/971)
+| aarch64 | g++ 10.2.1 | neon64 | OK
 
 It depends on the following libraries :
 - [xsimd](https://github.com/xtensor-stack/xsimd/tree/master)

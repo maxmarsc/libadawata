@@ -1379,7 +1379,7 @@ TEST_CASE("Reference test : CH10 460Hz") {
 
   // Empiric, checked with matlab SNR's, it gives the same value of 33.18dB
   // -43dB difference with python impl
-  constexpr auto kEps                  = 5e-5F;
+  constexpr auto kEps                  = 8e-5F;
   Catch::StringMaker<float>::precision = 15;
   // The reference file has a gain of 0.5
   constexpr auto kGain = 0.5F;

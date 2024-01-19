@@ -3,7 +3,7 @@ include(FetchContent)
 FetchContent_Declare(
   xsimd
   GIT_REPOSITORY git@github.com:xtensor-stack/xsimd.git
-  GIT_TAG 11.1.0
+  GIT_TAG 12.1.1
   GIT_SHALLOW ON
 )
 
