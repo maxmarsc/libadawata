@@ -103,7 +103,6 @@ class Oscillator {
   [[nodiscard]] int init(
       std::unique_ptr<WavetableData>&& wavetable_data,
       std::tuple<float, float> init_state = std::make_tuple(0.F, 0.4F)) {
-    assert(wavetable_ == nullptr);
     if (wavetable_data == nullptr)
       return 1;
     wavetable_ = std::move(wavetable_data);
@@ -125,7 +124,6 @@ class Oscillator {
   [[nodiscard]] std::unique_ptr<WavetableData> swapWavetable(
       std::unique_ptr<WavetableData>&& wavetable_data,
       std::tuple<float, float> init_state = std::make_tuple(0.F, 0.4F)) {
-    assert(wavetable_ != nullptr);
     auto waveform_data_ptr = std::move(wavetable_data);
     if (waveform_data_ptr == nullptr)
       return nullptr;

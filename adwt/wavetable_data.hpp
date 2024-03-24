@@ -176,6 +176,22 @@ class WavetableData {
   [[nodiscard]] MipMapIndices findMipMapIndices(
       float phase_diff) const noexcept;
 
+  // /**
+  //  * @brief Computes the corresponding frequency of each mipmap transition point
+  //  *
+  //  * @param samplerate The samplerate for which the mipmap table was computed for
+  //  * @return std::vector<float> A vector of frequency values, should be ordered
+  //  */
+  // [[nodiscard]] std::vector<float> computeMipMapFrequencies(
+  //     float samplerate) const;
+  /**
+   * @brief Returns the mipmap table of phase point. Each phase point represents a 
+   * transition point between two mipmap tables
+   */
+  [[nodiscard]] inline Span<const float> mipMapTable() const noexcept {
+    return mipmap_scale_;
+  }
+
   //==============================================================================
  private:
   static int computeNumMipMapTables(int waveform_len);

@@ -153,10 +153,7 @@ void WavetableData::updateSamplerate(float samplerate) {
 //==============================================================================
 [[nodiscard]] WavetableData::MipMapIndices WavetableData::findMipMapIndices(
     float abs_phase_diff) const noexcept {
-  assert(abs_phase_diff != 0);
-  // constexpr auto kThresholdRatio = 0.99F;
-  constexpr auto kTest = 0.1F;
-
+  assert(abs_phase_diff > 0.F);
   // TODO: optimize the search, this could be done by giving a hint for the
   // search, like the last index and the phase diff diff
   auto i = 0;
@@ -187,6 +184,17 @@ void WavetableData::updateSamplerate(float samplerate) {
 
   return std::make_tuple(i, factor_crt, i + 1, factor_next);
 }
+
+// [[nodiscard]] std::vector<float> WavetableData::computeMipMapFrequencies(
+//     float samplerate) const {
+//   auto freqs = std::vector(mipmap_scale_);
+
+//   for (auto& freq : freqs) {
+//     freq *= samplerate;
+//   }
+
+//   return freqs;
+// }
 
 //==============================================================================
 int WavetableData::computeNumMipMapTables(int waveform_len) {

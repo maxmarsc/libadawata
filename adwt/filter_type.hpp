@@ -41,10 +41,10 @@ namespace adwt {
  *
  * With 256-bits SIMD filters of orders up to 16 can be used with approximately
  * the same computation time.
- * With 128-bits SIMD filters of orders up to 16 can be used with approximately
+ * With 128-bits SIMD filters of orders up to 8 can be used with approximately
  * the same computation time.
  *
- * For now only experimental filters are available, derived from the resarch
+ * For now only experimental filters are available, derived from the research
  * paper https://www.researchgate.net/publication/362628103_Antiderivative_Antialiasing_for_Arbitrary_Waveform_Generation
  * 
  * Here is an example, using Scipy (Python), on how to add a new filter (here a butteworth filter)
@@ -73,8 +73,8 @@ namespace adwt {
  * 
  */
 enum class FilterType {
-  kType1,  // Butteworth order 2, cutoff at 0.45*samplerate
-  kType2,  // Chebyshev type 2 order 10, cutoff at 0.61*samplerate
+  kType1 = 1,  // Butteworth order 2, cutoff at 0.45*samplerate
+  kType2 = 2,  // Chebyshev type 2 order 10, cutoff at 0.61*samplerate
 
   kType3,  // Butterworth order 4
   kType4,  // Butterworth order 6
