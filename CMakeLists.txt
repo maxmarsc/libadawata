@@ -12,6 +12,11 @@ option(BUILD_BENCHMARKS
        Off
 )
 option(
+  ENABLE_QUALITY_TESTS
+  "When running the tests, this will run the python quality tests. Requires a GUI"
+  Off
+)
+option(
   ENABLE_CXX20
   "Enable the use of C++20, otherwise only C++17 is supported and gsl::span will be used"
   On

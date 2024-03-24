@@ -13,7 +13,7 @@
 #include "benchmarks/saw_2048.hpp"
 
 constexpr auto kSamplerate = 44100.F;
-constexpr auto kDurationS  = 10.F;
+constexpr auto kDurationS  = 5.F;
 constexpr auto kInitPhase  = 0.99F;
 
 void generateLinearSweepPhase(adwt::Span<float> dst, float start, float end,
@@ -90,15 +90,15 @@ OscillatorType createOscillator(adwt::FilterType ftype) {
 int main(int argc, char* argv[]) {
   argparse::ArgumentParser program("sweep_generator");
 
+  program.add_argument("ftype")
+      .help("Type of filter (1 or 2)")
+      .scan<'i', int>();
   program.add_argument("fmin")
       .help("Start frequency of the sweep")
       .scan<'g', float>();
   program.add_argument("fmax")
       .help("End frequency of the sweep")
       .scan<'g', float>();
-  program.add_argument("ftype")
-      .help("Type of filter (1 or 2)")
-      .scan<'i', int>();
   program.add_argument("output_dir")
       .help("absolute path directory where to store results");
 
@@ -122,7 +122,6 @@ int main(int argc, char* argv[]) {
 
   // compute the phase vector
   auto phase_vector = std::vector<float>(num_samples);
-  // generateLinearSweepPhase(phase_vector, fmin, fmax, kSamplerate);
   generateExpSweepPhase(phase_vector, fmin, fmax, kSamplerate);
 
   // compute the waveform points
@@ -164,26 +163,16 @@ int main(int argc, char* argv[]) {
   }
 
   // Write to files
-  auto freq_filepath  = output_dir;
   auto audio_filepath = output_dir;
-  freq_filepath.append("/frequencies.wav");
   audio_filepath.append("/audio.wav");
-  auto freq_sndfile =
-      SndfileHandle(freq_filepath, SFM_WRITE, SF_FORMAT_WAV | SF_FORMAT_FLOAT,
-                    1, kSamplerate);
   auto audio_sndfile =
       SndfileHandle(audio_filepath, SFM_WRITE, SF_FORMAT_WAV | SF_FORMAT_FLOAT,
                     1, kSamplerate);
-  if (!freq_sndfile || !audio_sndfile) {
+  if (!audio_sndfile) {
     std::cerr << "Couldn't open output files for write" << std::endl;
     return 4;
   }
-  auto written = freq_sndfile.writef(freq_vector.data(), num_samples);
-  if (written != num_samples) {
-    std::cerr << "Failed to write frequencies to file" << std::endl;
-    return 5;
-  }
-  written = audio_sndfile.writef(output_vec.data(), num_samples);
+  auto written = audio_sndfile.writef(output_vec.data(), num_samples);
   if (written != num_samples) {
     std::cerr << "Failed to write audio to file" << std::endl;
     return 6;

@@ -120,6 +120,52 @@ are available, and it should be easy to add support for new filter.
 # Build
 You can build `libadawata` with cmake >= 3.16
 
+# Testing
+Automated testing is really hard for this kind of tasks, as robust and unbiased 
+measurements are limited and not always reliable.
+
+`libadawata` is shipped with two sets of tests 
+
+## Unit Tests
+These tests only test the basic interface of libadawata. ***They don't check the 
+generated audio content.***
+
+You can enable them using `-DBUILD_TESTING=ON`. You can run them with CTest or manually :
+```bash
+./build/tests/libadawata_tests
+```
+
+## Quality Tests
+These check provide GUI checks for the user. You can enable them using `-DENABLE_QUALITY_TESTS=ON`
+
+You will also need some additional python modules, listed in the `requirements.txt` file,
+which you can install using :
+```bash
+pip install -r requirements.txt
+```
+
+### Sweep test
+This will print the spectrogram of a logarithmic sweep test. This is useful for
+identifying cross-fading issues.
+
+You can run it with cmake :
+```bash
+cmake -B build -DBUILD_TESTING=ON -DENABLE_QUALITY_TESTS=ON .
+cmake --build build --target sweep_test
+```
+
+### SNR test
+This will compute the SNR of static tones over a logarithmic range of frequencies.
+This is usefull to identify degrading quality issue of the whole algorithm.
+
+You can run it with cmake :
+```bash
+cmake -B build -DBUILD_TESTING=ON -DENABLE_QUALITY_TESTS=ON .
+cmake --build build --target snr_test
+```
+
+*I strongly encourage you to run this test on **Release** mode*
+
 # Licensing
 This work is licensed under the MIT License.
 
@@ -145,17 +191,13 @@ but keep in mind this is a hobby project.
 - [x] Documentation
 - [x] Add License
 - [x] READMEs
+- [x] Find better unit tests, stop using reference tests from python implementation
 - [ ] (planned) Check more compilers and add to doc
-- [ ] (planned) Add Sphinx documentation generation
 - [ ] (planned) Check BUILD_SHARED_LIBS option
 - [ ] (planned) Use FetchContent for libsndfile
-- [ ] (planned) Added pkgconfig cmake configuration ?
 - [ ] (planned) Make LSR dependency optional
 - [ ] (planned) Test arm32 implementation
-- [ ] (planned) Add CI/CD
-- [ ] (planned) Use Github pages for documentation
-- [ ] (planned) Add more benchmarks
-- [ ] (planned) Find better unit tests, stop using reference tests from python implementation
+- [ ]  Add pkgconfig cmake configuration ?
 
 ## R&D
 This code was developed based on the python experimentations I made, which you can

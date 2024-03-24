@@ -53,7 +53,7 @@ inline constexpr bool isPowerOfTwo(int value) noexcept {
   return ceil(std::log2f(fvalue)) == floor(std::log2f(fvalue));
 }
 
-inline int sign(float value) noexcept {
+inline constexpr int sign(float value) noexcept {
   constexpr auto kMin = std::numeric_limits<float>::min();
   if (std::fabs(value) < kMin)
     return 0;
