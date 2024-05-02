@@ -29,6 +29,8 @@
 #include <cmath>
 #include <type_traits>
 
+#pragma once
+
 namespace adwt::maths {
 
 inline constexpr int floor(float fvalue) noexcept {

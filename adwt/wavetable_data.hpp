@@ -33,6 +33,8 @@
 #include <tuple>
 #include <vector>
 
+#include "cppitertools/range.hpp"
+#include "crossfading.hpp"
 #include "span.hpp"
 
 namespace adwt {
@@ -46,7 +48,7 @@ namespace adwt {
 class WavetableData {
   //============================================================================
   WavetableData(Span<const float> waveforms, int num_waveforms,
-                float samplerate, float mipmap_ratio);
+                float samplerate, int crossfade_samples, int waveform_len);
 
  public:
   /**
@@ -57,7 +59,6 @@ class WavetableData {
    * 3: The gain [0:1] to apply to the mipmap entry of 1
    * 
    */
-  using MipMapIndices = std::tuple<int, float, int, float>;
 
   /**
    * @brief Builds a new WavetableData instance for a given wavetable
@@ -73,19 +74,22 @@ class WavetableData {
    * @param num_waveforms The number of waveforms in the wavetable
    * @param samplerate The samplerate at which this waveform is going to be played
    * (needed for mipmapping cross-fading settings)
-   * @param mipmap_ratio Ratio (0:1) of each octave that will be cross-faded with
-   * the lowest octave
+   * @param crossfade_duration_s The duration (in seconds) of a crossfade between
+   * mipmap tables
    */
-  static std::unique_ptr<WavetableData> build(Span<const float> waveforms,
-                                              int num_waveforms,
-                                              float samplerate,
-                                              float mipmap_ratio = 0.98F);
+  static std::unique_ptr<WavetableData> build(
+      Span<const float> waveforms, int num_waveforms, float samplerate,
+      float crossfade_duration_s = 0.005F);
 
   /**
    * @brief Updates the samplerate of the wavetable by recomputing mipmap transition
    * points
+   *
+   * @note This will rebuild the original waveforms from the M & Q points,
+   * which can cause a loss of accuracy, up to 4e-3F (for a randomized [-1:1] waveform)
+   * If you want a better accuraccy you'd better create a new WavetableData object
    */
-  void updateSamplerate(float samplerate);
+  void updateSamplerate(float samplerate, float crossfade_duration_s = 0.005F);
 
   //============================================================================
   /**
@@ -147,7 +151,7 @@ class WavetableData {
    * size of the waveform and the samplerate
    */
   [[nodiscard]] inline int numMipMapTables() const noexcept {
-    return static_cast<int>(mipmap_scale_.size());
+    return cross_fader_.numMipMapTables();
   }
   /**
    * @brief Size of the mipmap entry of the given index
@@ -155,50 +159,24 @@ class WavetableData {
   [[nodiscard]] inline int waveformLen(int mipmap) const noexcept {
     return static_cast<int>(m_[0][mipmap].size());
   }
-  /**
-   * @brief Ratios to help compute an estimation of the frequency variation limitation
-   * induced by the cross-fading implementation.
-   *
-   * This function returns [min, max]. Given your previous phase_diff value :
-   *  - min * phase_diff : the next minimum phase_diff you should be able to use
-   * without introducing audio "clicks"
-   * - max * phase_diff : the next maximum phase_diff you should be able to use
-   * without introducing audio "clicks"
-   */
-  [[nodiscard]] inline std::tuple<float, float> minMaxPhaseDiffRatio()
-      const noexcept {
-    return std::make_tuple(mipmap_ratio_, 1.F / mipmap_ratio_);
-  };
 
   /**
    * @brief Returns the @ref MipMapIndices tuple for the given phase diff
    */
-  [[nodiscard]] MipMapIndices findMipMapIndices(
-      float phase_diff) const noexcept;
-
-  // /**
-  //  * @brief Computes the corresponding frequency of each mipmap transition point
-  //  *
-  //  * @param samplerate The samplerate for which the mipmap table was computed for
-  //  * @return std::vector<float> A vector of frequency values, should be ordered
-  //  */
-  // [[nodiscard]] std::vector<float> computeMipMapFrequencies(
-  //     float samplerate) const;
-  /**
-   * @brief Returns the mipmap table of phase point. Each phase point represents a 
-   * transition point between two mipmap tables
-   */
-  [[nodiscard]] inline Span<const float> mipMapTable() const noexcept {
-    return mipmap_scale_;
+  [[nodiscard]] inline MipMapIndices findMipMapIndices(
+      float abs_phase_diff) noexcept {
+    return cross_fader_.newIndices(abs_phase_diff);
   }
 
   //==============================================================================
  private:
-  static int computeNumMipMapTables(int waveform_len);
-  void computeMipMapScale(int waveform_len, float samplerate);
-  void computeMQValues(Span<const float> waveform, int waveform_idx,
+  void computeMQVector(Span<const float> waveform, int waveform_idx,
                        int mipmap_idx);
+
+  void computePhaseVectors(int og_waveform_len);
   void computePhaseVector(int waveform_len, int mipmap_idx);
+
+  std::vector<float> rebuildWaveforms();
 
   static std::vector<float> downsampleWaveform(Span<const float> waveform,
                                                int ratio);
@@ -209,8 +187,7 @@ class WavetableData {
   std::vector<std::vector<std::vector<float>>> m_diff_;
   std::vector<std::vector<std::vector<float>>> q_diff_;
   std::vector<std::vector<float>> phases_;
-  std::vector<float> mipmap_scale_;
-  const float mipmap_ratio_;
+  CrossFader cross_fader_;
 };
 
 }  // namespace adwt

@@ -161,6 +161,10 @@ class Oscillator {
   /**
    * @brief Updates the samplerate of the wavetable by recomputing mipmap transition
    * points
+   *
+   * @note This will rebuild the original waveforms from the M & Q points,
+   * which can causes a loss of precision, up to 4e-3F (for a randomized [-1:1] waveform)
+   * If you want a better accuraccy you'd better create a new WavetableData object
    */
   void updateSamplerate(float samplerate) {
     assert(wavetable_ != nullptr);
@@ -225,21 +229,6 @@ class Oscillator {
     assert(wavetable_ != nullptr);
     return prev_phase_diff_;
   }
-  /**
-   * @brief Ratios to help compute an estimation of the frequency variation limitation
-   * induced by the cross-fading implementation.
-   *
-   * This function returns [min, max]. Given your previous phase_diff value :
-   *  - min * phase_diff : the next minimum phase_diff you should be able to use
-   * without introducing audio "clicks"
-   * - max * phase_diff : the next maximum phase_diff you should be able to use
-   * without introducing audio "clicks"
-   */
-  [[nodiscard]] inline std::tuple<float, float> minMaxPhaseDiffRatio()
-      const noexcept {
-    assert(wavetable_ != nullptr);
-    return wavetable_->minMaxPhaseDiffRatio();
-  };
 
   //============================================================================
   //                         IMPLEMENTATION DETAILS

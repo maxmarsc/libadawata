@@ -92,10 +92,12 @@ TEST_CASE("Valid build") {
         wavetable_data->findMipMapIndices(abs_phase_diff);
 
     INFO("phase_diff : " << abs_phase_diff);
+    INFO("mm tables : " << wavetable_data->numMipMapTables());
     REQUIRE(crt_weight + nxt_weight == 1.0F);
     REQUIRE(crt_idx >= 0);
     REQUIRE(crt_idx < wavetable_data->numMipMapTables());
-    REQUIRE(crt_idx + 1 == nxt_idx);
+    REQUIRE(
+        (crt_idx + 1 == nxt_idx || (crt_idx == nxt_idx && crt_weight == 1.F)));
   }
 }
 

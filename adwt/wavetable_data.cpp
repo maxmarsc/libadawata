@@ -32,6 +32,7 @@
 #include <samplerate.h>
 #include <cppitertools/enumerate.hpp>
 #include <cppitertools/range.hpp>
+#include <cppitertools/zip.hpp>
 #include <iostream>
 #include <numeric>
 
@@ -39,37 +40,29 @@
 
 namespace adwt {
 
-inline float computeM(float x0, float x1, float y0, float y1) {
-  return (y1 - y0) / (x1 - x0);
+inline float computeM(double x0, double x1, double y0, double y1) {
+  return static_cast<float>((y1 - y0) / (x1 - x0));
 }
 
-inline float computeQ(float x0, float x1, float y0, float y1) {
-  return (y0 * (x1 - x0) - x0 * (y1 - y0)) / (x1 - x0);
+inline float computeQ(double x0, double x1, double y0, double y1) {
+  return static_cast<float>((y0 * (x1 - x0) - x0 * (y1 - y0)) / (x1 - x0));
 }
 
 //==============================================================================
 WavetableData::WavetableData(Span<const float> waveforms, int num_waveforms,
-                             float samplerate, float mipmap_ratio)
-    : mipmap_ratio_((1.F + mipmap_ratio) / 2.F) {
+                             float samplerate, int crossfade_samples,
+                             int og_waveform_len)
+    : cross_fader_(crossfade_samples, og_waveform_len, samplerate) {
+  assert(og_waveform_len * num_waveforms == waveforms.size());
+
   // Resize the vectors to be sure then can hold enough waveforms
   m_.resize(num_waveforms);
   q_.resize(num_waveforms);
   m_diff_.resize(num_waveforms);
   q_diff_.resize(num_waveforms);
 
-  const auto og_waveform_len =
-      static_cast<int>(waveforms.size()) / num_waveforms;
-
-  // Compute the mipmap scale and how many entries in the mipmap tables
-  computeMipMapScale(og_waveform_len, samplerate);
-  assert(numMipMapTables() > 0);
-
   // Compute the phase points vectors
-  phases_.resize(numMipMapTables());
-  for (auto mipmap_idx : iter::range(numMipMapTables())) {
-    const auto waveform_len = og_waveform_len / (1 << mipmap_idx);
-    computePhaseVector(waveform_len, mipmap_idx);
-  }
+  computePhaseVectors(og_waveform_len);
 
   // We iterate over each waveform
   for (auto waveform_idx : iter::range(num_waveforms)) {
@@ -81,7 +74,7 @@ WavetableData::WavetableData(Span<const float> waveforms, int num_waveforms,
     q_[waveform_idx].resize(numMipMapTables());
     m_diff_[waveform_idx].resize(numMipMapTables());
     q_diff_[waveform_idx].resize(numMipMapTables());
-    computeMQValues(og_waveform, waveform_idx, 0);
+    computeMQVector(og_waveform, waveform_idx, 0);
 
     // libsamplerate supports a maximum resampling ratio of 256
     constexpr auto kMaxLibSamplerate = 8;
@@ -103,7 +96,7 @@ WavetableData::WavetableData(Span<const float> waveforms, int num_waveforms,
         if (mipmap_idx <= num_intermediate_tables)
           intermediate_tables[mipmap_idx - 1] = std::move(ds_waveform);
 
-        computeMQValues(ds_waveform, waveform_idx, mipmap_idx);
+        computeMQVector(ds_waveform, waveform_idx, mipmap_idx);
       } else {
         auto ratio            = 256;
         auto downsampling_src = Span<const float>(
@@ -113,16 +106,15 @@ WavetableData::WavetableData(Span<const float> waveforms, int num_waveforms,
         if (ds_waveform.empty())
           throw std::runtime_error("Downsampled failed");
 
-        computeMQValues(ds_waveform, waveform_idx, mipmap_idx);
+        computeMQVector(ds_waveform, waveform_idx, mipmap_idx);
       }
     }
   }
 }
 
-std::unique_ptr<WavetableData> WavetableData::build(Span<const float> waveforms,
-                                                    int num_waveforms,
-                                                    float samplerate,
-                                                    float mipmap_ratio) {
+std::unique_ptr<WavetableData> WavetableData::build(
+    Span<const float> waveforms, int num_waveforms, float samplerate,
+    float crossfade_duration_s) {
   if (waveforms.empty())
     return nullptr;
   if (num_waveforms <= 0)
@@ -134,85 +126,30 @@ std::unique_ptr<WavetableData> WavetableData::build(Span<const float> waveforms,
   if (waveforms.size() % num_waveforms != 0)
     return nullptr;
 
-  const auto waveform_len = waveforms.size() / num_waveforms;
+  const auto waveform_len = static_cast<int>(waveforms.size()) / num_waveforms;
   if (!maths::isPowerOfTwo(static_cast<int>(waveform_len)))
     return nullptr;
 
+  const auto crossfade_samples =
+      static_cast<int>(crossfade_duration_s * samplerate);
+
   // can't use make_unique because ctor is private
   try {
-    return std::unique_ptr<WavetableData>(
-        new WavetableData(waveforms, num_waveforms, samplerate, mipmap_ratio));
+    return std::unique_ptr<WavetableData>(new WavetableData(
+        waveforms, num_waveforms, samplerate, crossfade_samples, waveform_len));
   } catch (std::runtime_error&) { return nullptr; }
 }
 
-void WavetableData::updateSamplerate(float samplerate) {
-  // Recompute the mipmap scale
-  computeMipMapScale(waveformLen(0), samplerate);
+void WavetableData::updateSamplerate(float samplerate,
+                                     float crossfade_duration_s) {
+  auto og_waveforms = rebuildWaveforms();
+  auto new_data =
+      build(og_waveforms, numWaveforms(), samplerate, crossfade_duration_s);
+  std::swap(*this, *new_data);
 }
 
 //==============================================================================
-[[nodiscard]] WavetableData::MipMapIndices WavetableData::findMipMapIndices(
-    float abs_phase_diff) const noexcept {
-  assert(abs_phase_diff > 0.F);
-  // TODO: optimize the search, this could be done by giving a hint for the
-  // search, like the last index and the phase diff diff
-  auto i = 0;
-  while (i < mipmap_scale_.size() - 1) {
-    if (abs_phase_diff < mipmap_scale_[i])
-      break;
-
-    ++i;
-  }
-
-  if (i == mipmap_scale_.size() - 1) {
-    // Reached last index, no crossfade
-    return std::make_tuple(i, 1.F, i + 1, 0.F);
-  }
-
-  auto threshold = mipmap_ratio_ * mipmap_scale_[i];
-
-  if (abs_phase_diff < threshold) {
-    // Below threshold, we don't crossfade
-    return std::make_tuple(i, 1.F, i + 1, 0.F);
-  }
-
-  // Above threshold, starting crossfade
-  auto a           = 1.0 / (mipmap_scale_[i] - threshold);
-  auto b           = -threshold * a;
-  auto factor_next = a * abs_phase_diff + b;
-  auto factor_crt  = 1.0 - factor_next;
-
-  return std::make_tuple(i, factor_crt, i + 1, factor_next);
-}
-
-// [[nodiscard]] std::vector<float> WavetableData::computeMipMapFrequencies(
-//     float samplerate) const {
-//   auto freqs = std::vector(mipmap_scale_);
-
-//   for (auto& freq : freqs) {
-//     freq *= samplerate;
-//   }
-
-//   return freqs;
-// }
-
-//==============================================================================
-int WavetableData::computeNumMipMapTables(int waveform_len) {
-  return maths::floor(std::log2(static_cast<float>(waveform_len) / 4.F)) + 1;
-}
-
-void WavetableData::computeMipMapScale(int waveform_len, float samplerate) {
-  const auto start = samplerate / static_cast<float>(waveform_len) * 2.F;
-  const auto num   = computeNumMipMapTables(waveform_len);
-
-  // Compute the mipmap scale
-  mipmap_scale_.resize(num);
-  for (auto&& [i, val] : iter::enumerate(mipmap_scale_)) {
-    val = start * static_cast<float>(std::pow(2.F, i)) / samplerate;
-  }
-}
-
-void WavetableData::computeMQValues(Span<const float> waveform,
+void WavetableData::computeMQVector(Span<const float> waveform,
                                     int waveform_idx, int mipmap_idx) {
   assert(!m_.empty());
   assert(q_.size() == numWaveforms());
@@ -257,6 +194,26 @@ void WavetableData::computeMQValues(Span<const float> waveform,
   q_diff_vec[waveform_len - 1] -= m_vec[0];
 }
 
+void WavetableData::computePhaseVectors(int og_waveform_len) {
+  const auto num_mm_tables = numMipMapTables();
+  const auto prev_num      = static_cast<int>(phases_.size());
+
+  if (num_mm_tables > prev_num) {
+    // Missing some phase vectors
+    phases_.resize(num_mm_tables);
+
+    // We compute every missing phase vector
+    for (const auto mm_idx : iter::range(prev_num, num_mm_tables)) {
+      const auto waveform_len = og_waveform_len / (1 << mm_idx);
+      computePhaseVector(waveform_len, mm_idx);
+    }
+
+  } else if (num_mm_tables < prev_num) {
+    // New mm count is lower, we can remove some mm tables
+    phases_.resize(num_mm_tables);
+  }
+}
+
 void WavetableData::computePhaseVector(int waveform_len, int mipmap_idx) {
   assert(!phases_.empty());
   phases_[mipmap_idx].resize(waveform_len + 1);
@@ -264,6 +221,30 @@ void WavetableData::computePhaseVector(int waveform_len, int mipmap_idx) {
   for (auto&& [i, val] : iter::enumerate(phases_[mipmap_idx])) {
     val = static_cast<float>(i) / static_cast<float>(waveform_len);
   }
+}
+
+std::vector<float> WavetableData::rebuildWaveforms() {
+  assert(!phases_.empty());
+  const auto num_waveforms = numWaveforms();
+  const auto waveform_size = waveformLen(0);
+  auto ret                 = std::vector<float>(num_waveforms * waveform_size);
+
+  for (const auto waveform_idx : iter::range(num_waveforms)) {
+    auto start         = ret.begin() + waveform_idx * waveform_size;
+    auto end           = start + waveform_size;
+    auto waveform_span = Span<float>(start, end);
+
+    auto m_span = m(waveform_idx, 0);
+    auto q_span = q(waveform_idx, 0);
+    auto phase  = phases(0);
+
+    for (auto&& [m, q, x, y] :
+         iter::zip(m_span, q_span, phase, waveform_span)) {
+      y = m * x + q;
+    }
+  }
+
+  return ret;
 }
 
 std::vector<float> WavetableData::downsampleWaveform(Span<const float> waveform,

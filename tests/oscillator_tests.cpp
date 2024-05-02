@@ -518,4 +518,89 @@ TEST_CASE("Valid init CH10") {
   }
 }
 
+TEST_CASE("Update samplerate") {
+  auto osc                   = adwt::Oscillator<adwt::FilterType::kType1>();
+  const auto waveform_len    = GENERATE(1024, 2048);
+  const auto num_waveforms   = GENERATE(1, 2, 3);
+  const auto samplerate_a    = 44100;
+  const auto samplerate_b    = 48000;
+  const auto init_phase      = 0.F;
+  const auto init_phase_diff = 0.4F;
+  static_assert(samplerate_a != samplerate_b);
+  const auto output_size = 4096;
+  auto waveforms         = std::vector<float>(waveform_len * num_waveforms);
+  auto phase_vec         = std::vector<float>(output_size);
+
+  // Generate random waveforms
+  {
+    auto rng_wf = Catch::Generators::RandomFloatingGenerator<float>(
+        -1.F, 1.F, Catch::getSeed());
+
+    for (auto& sample : waveforms) {
+      sample = rng_wf.get();
+      rng_wf.next();
+    }
+  }
+
+  // Generate random phase
+  {
+    auto rng_phase = Catch::Generators::RandomFloatingGenerator<float>(
+        0.F, 1.F, Catch::getSeed());
+
+    for (auto& phase : phase_vec) {
+      phase = rng_phase.get();
+      rng_phase.next();
+    }
+  }
+
+  // Creates vectors to hold oscillator output
+  auto output_a_1 = std::vector<float>(output_size);
+  auto output_a_2 = std::vector<float>(output_size);
+  auto output_b_1 = std::vector<float>(output_size);
+  auto output_b_2 = std::vector<float>(output_size);
+
+  // Init the osc in configuration A
+  auto wavetable_a_1 = adwt::WavetableData::build(
+      waveforms, num_waveforms, static_cast<float>(samplerate_a));
+  REQUIRE(wavetable_a_1 != nullptr);
+  REQUIRE(osc.init(std::move(wavetable_a_1),
+                   std::make_tuple(init_phase, init_phase_diff)) == 0);
+
+  // Run A.1
+  osc.process(phase_vec, output_a_1);
+
+  // Run B.1
+  osc.updateSamplerate(samplerate_b);
+  osc.resetInternals(init_phase, init_phase_diff);
+  osc.process(phase_vec, output_b_1);
+
+  // Run A.2
+  osc.updateSamplerate(samplerate_a);
+  osc.resetInternals(init_phase, init_phase_diff);
+  osc.process(phase_vec, output_a_2);
+
+  // Run B.2
+  osc.updateSamplerate(samplerate_b);
+  osc.resetInternals(init_phase, init_phase_diff);
+  osc.process(phase_vec, output_b_2);
+
+  // Compare
+  constexpr auto kEps                  = 4e-3F;
+  Catch::StringMaker<float>::precision = 15;
+
+  // Configuration A
+  for (auto&& [a_1, a_2] : iter::zip(output_a_1, output_a_2)) {
+    INFO("A.1 : " << a_1);
+    INFO("A.2 : " << a_2);
+    REQUIRE(std::abs(a_1 - a_2) <= kEps);
+  }
+
+  // Configuration B
+  for (auto&& [b_1, b_2] : iter::zip(output_b_1, output_b_2)) {
+    INFO("B.1 : " << b_1);
+    INFO("B.2 : " << b_2);
+    REQUIRE(std::abs(b_1 - b_2) <= kEps);
+  }
+}
+
 }  // namespace tests

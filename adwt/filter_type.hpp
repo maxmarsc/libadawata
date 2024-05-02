@@ -25,6 +25,8 @@
 * SOFTWARE.
 */
 
+#pragma once
+
 #include <array>
 #include <complex>
 #include <cppitertools/zip.hpp>

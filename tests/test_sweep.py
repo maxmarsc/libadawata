@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 SAMPLERATE = 44100
 FMIN = 50
-FMAX = 22000
+FMAX = 21500
 NFFT = 512
 NOVERLAP = int(NFFT * 0.9)
 BINARY_DIR = Path(os.getenv("BUILD_DIR", Path(__file__).parent.parent / "build"))
