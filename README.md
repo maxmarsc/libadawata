@@ -12,6 +12,10 @@ up to 16, for a complexity similar to an oversampling x8 (see benchmarks).
 
 It was first published at the Audio Developer Conference 2023, you can find the slides [here](https://docs.google.com/presentation/d/1mx8f7yxXMLxQ-pl3IcoqLkcZtQGd7z6gOidcQMAfxPc/edit?usp=sharing)
 
+## What changed since ADC23
+- `libadawata` now uses a time-based cross-fading between mipmap tables (~= octaves)
+- aarch64 implementations was fixed
+
 # Requirements
 `libadawata` requires a C++17 or C++20 compliant compiler. It has been tested
 with the following setup
@@ -81,24 +85,14 @@ You can select the waveform to use in the wavetable with `adwt::Oscillator::setW
 ## Limitations
 Due to the nature of the algorithm (see the [slides](https://docs.google.com/presentation/d/1mx8f7yxXMLxQ-pl3IcoqLkcZtQGd7z6gOidcQMAfxPc/edit?usp=sharing)),
 it has limitations on how fast the frequency of the signal can vary without an 
-exponential increase of the complexity.
+exponential increase of the complexity. 
 
-The approach in this implementation was to allow for any frequency variation. However 
-**if the frequency is varying too fast it can introduce audio artifacts** in order to keep
-the complexity under a reasonnable upper bound.
+**Note that the cross fading strategy changed since the ADC23 presentation.** `libadawata` now uses
+a more classic time-based cross-fading between the different mipmap tables.
 
-The exact limitations are hard to measure, and this is subject to future evolution
-in order to make the algorithm more permissive.
-
-### How to measure
-The `Oscillator` class provides the `minMaxPhaseDiffRatio` method. It returns
-a tuple of `min` and `max` ratio. Given your previous `phase_diff` value :
-- `min * phase_diff` : the next minimum `phase_diff` under which you will definitively
-introduce audio artifacts
-- `max * phase_diff` : the next maximum `phase_diff` above which you will definitively
-introduce audio artifacts
-
-*This might evolve into a more classic cross-fading approach*
+When creating a `WavetableData` object, the caller can precise how long the cross-fading
+takes (default to 5ms). **As long as you limit variations to no more than a single octave
+change every 5ms, no artifacts above -90dB will appear.**
 
 ### Setting a new frequency
 To avoid such problems when you just want to play at a new arbitrary frequency, 
@@ -182,7 +176,7 @@ but keep in mind this is a hobby project.
 
 ## Algorithm improvement milestones
 - [ ] Experiment with filter design to find the best one for each order
-- [ ] (planned) Move to a more classic time-based cross-fading
+- [x] (planned) Move to a more classic time-based cross-fading
 
 ## QoL Milestones
 - [x] Basic SIMD optimization
@@ -192,12 +186,12 @@ but keep in mind this is a hobby project.
 - [x] Add License
 - [x] READMEs
 - [x] Find better unit tests, stop using reference tests from python implementation
-- [ ] (planned) Check more compilers and add to doc
-- [ ] (planned) Check BUILD_SHARED_LIBS option
-- [ ] (planned) Use FetchContent for libsndfile
-- [ ] (planned) Make LSR dependency optional
-- [ ] (planned) Test arm32 implementation
-- [ ]  Add pkgconfig cmake configuration ?
+- [ ] Check more compilers and add to doc
+- [ ] Check BUILD_SHARED_LIBS option
+- [ ] Use FetchContent for libsndfile
+- [ ] Make LSR dependency optional
+- [ ] Test arm32 implementation
+- [ ] Add pkgconfig cmake configuration ?
 
 ## R&D
 This code was developed based on the python experimentations I made, which you can
