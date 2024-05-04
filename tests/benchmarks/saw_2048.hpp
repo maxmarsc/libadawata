@@ -25,6 +25,11 @@
 
 namespace benchmarks {
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wimplicit-float-conversion"
+#endif
+
 static constexpr std::array<float, 2048> kSawWaveform{
     -0.9995117,    -0.99853516,   -0.9975586,    -0.99658203,    -0.99560547,
     -0.9946289,    -0.99365234,   -0.9926758,    -0.9916992,     -0.99072266,
@@ -438,4 +443,8 @@ static constexpr std::array<float, 2048> kSawWaveform{
     0.9975586,     0.99853516,    0.9995117,
 };
 
-}
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
+}  // namespace benchmarks

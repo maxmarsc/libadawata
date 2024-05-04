@@ -30,6 +30,11 @@
 
 namespace benchmarks {
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-prototypes"
+#endif
+
 void bmSweep(benchmark::State& state) {
   const auto block_size       = static_cast<int>(state.range(0));
   const int64_t num_frames    = 2048 * 100;
@@ -70,5 +75,9 @@ void bmSweep(benchmark::State& state) {
 
 //NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 BENCHMARK(bmSweep)->RangeMultiplier(2)->Range(16, 2048);
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 }  // namespace benchmarks

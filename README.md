@@ -15,17 +15,19 @@ It was first published at the Audio Developer Conference 2023, you can find the 
 ## What changed since ADC23
 - `libadawata` now uses a time-based cross-fading between mipmap tables (~= octaves)
 - aarch64 implementations was fixed
+- clang-14 support was added
 
 # Requirements
 `libadawata` requires a C++17 or C++20 compliant compiler. It has been tested
 with the following setup
 | Arch    | Compiler | Config | Status |
 | -------- | ------- | ------- | ------- |
-| x84_64  | g++-11.4 | SSE2   | OK
-| x84_64  | g++-11.4 | SSE2 + FMA3 | OK
-| x84_64 | g++-10.5  | SSE2 | OK
-| x84_64 | g++-10.5  | SSE2 + FMA3 | OK
-| aarch64 | g++ 10.2.1 | neon64 | OK
+| x84_64  | g++-11 | SSE2   | OK
+| x84_64  | g++-11 | SSE2 + FMA3 | OK
+| x84_64 | g++-10  | SSE2 | OK
+| x84_64 | g++-10  | SSE2 + FMA3 | OK
+| x84_64 | clang-14 | SSE2 + FMA3 | OK
+| aarch64 | g++ 10 | neon64 | OK
 
 It depends on the following libraries :
 - [xsimd](https://github.com/xtensor-stack/xsimd/tree/master)
@@ -186,7 +188,7 @@ but keep in mind this is a hobby project.
 - [x] Add License
 - [x] READMEs
 - [x] Find better unit tests, stop using reference tests from python implementation
-- [ ] Check more compilers and add to doc
+- [x] Check more compilers and add to doc
 - [ ] Check BUILD_SHARED_LIBS option
 - [ ] Use FetchContent for libsndfile
 - [ ] Make LSR dependency optional

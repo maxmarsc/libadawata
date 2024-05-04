@@ -43,8 +43,12 @@ add_executable(
 
 target_include_directories(
   adwt_benchmark
-  PRIVATE ${PROJECT_SOURCE_DIR} ${BENCHMARK_INSTALL_DIR}/include
-          ${SNDFILE_INSTALL_DIR}/include
+  PRIVATE ${PROJECT_SOURCE_DIR}
+)
+
+target_include_directories(
+  adwt_benchmark SYSTEM
+  PRIVATE ${BENCHMARK_INSTALL_DIR}/include ${SNDFILE_INSTALL_DIR}/include
 )
 
 # set_target_properties( adwt_benchmark PROPERTIES CXX_STANDARD 20 )
@@ -130,9 +134,13 @@ add_executable(
 )
 
 target_include_directories(
+  juce_benchmark SYSTEM
+  PRIVATE ${BENCHMARK_INSTALL_DIR}/include ${SNDFILE_INSTALL_DIR}/include
+)
+
+target_include_directories(
   juce_benchmark
-  PRIVATE ${PROJECT_SOURCE_DIR} ${BENCHMARK_INSTALL_DIR}/include
-          ${SNDFILE_INSTALL_DIR}/include
+  PRIVATE ${PROJECT_SOURCE_DIR}
 )
 
 # set_target_properties( juce_benchmark PROPERTIES CXX_STANDARD 20 )
