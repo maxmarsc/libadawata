@@ -16,6 +16,7 @@ It was first published at the Audio Developer Conference 2023, you can find the 
 - `libadawata` now uses a time-based cross-fading between mipmap tables (~= octaves)
 - aarch64 implementations was fixed
 - clang-14 support was added
+- `ffast-math` is no longer invasive (made PRIVATE)
 
 # Requirements
 `libadawata` requires a C++17 or C++20 compliant compiler. It has been tested

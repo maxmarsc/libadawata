@@ -29,8 +29,8 @@ endif()
 
 target_compile_options(
   adawata
-  PUBLIC -ffast-math $<$<BOOL:${USE_ASAN}>:-fsanitize=address>
-  # -fopt-info-vec-optimized -fopt-info-vec-missed
+  PUBLIC $<$<BOOL:${USE_ASAN}>:-fsanitize=address>
+  PRIVATE -ffast-math
 )
 
 target_compile_definitions(
