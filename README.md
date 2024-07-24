@@ -85,6 +85,10 @@ In order to change the wavetable loaded in the oscillator, the workflow is :
 
 You can select the waveform to use in the wavetable with `adwt::Oscillator::setWaveform()`
 
+## Span implementation
+When compiled without c++20 support, this library comes with Microsoft's GSL span implementation. The `adwt::Span` alias either alias `gsl::span` or `std::span`.
+
+
 ## Limitations
 Due to the nature of the algorithm (see the [slides](https://docs.google.com/presentation/d/1mx8f7yxXMLxQ-pl3IcoqLkcZtQGd7z6gOidcQMAfxPc/edit?usp=sharing)),
 it has limitations on how fast the frequency of the signal can vary without an 
@@ -179,7 +183,7 @@ but keep in mind this is a hobby project.
 
 ## Algorithm improvement milestones
 - [ ] Experiment with filter design to find the best one for each order
-- [x] (planned) Move to a more classic time-based cross-fading
+- [x] Move to a more classic time-based cross-fading
 
 ## QoL Milestones
 - [x] Basic SIMD optimization
@@ -190,7 +194,6 @@ but keep in mind this is a hobby project.
 - [x] READMEs
 - [x] Find better unit tests, stop using reference tests from python implementation
 - [x] Check more compilers and add to doc
-- [ ] Check BUILD_SHARED_LIBS option
 - [ ] Use FetchContent for libsndfile
 - [ ] Make LSR dependency optional
 - [ ] Test arm32 implementation
